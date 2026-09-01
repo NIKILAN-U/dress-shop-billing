@@ -3,125 +3,109 @@ import { Modal } from '../components/common/Modal';
 import { createProduct, updateProduct } from '../services/productService';
 import { getCategories } from '../services/categoryService';
 import { getBrands } from '../services/brandService';
-import { getSuppliers } from '../services/supplierService';
-import { Plus, Trash2, Tag, Barcode } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
-export const ProductFormModal = ({ isOpen, onClose, productToEdit, onSaved }) => {
+export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
     category: '',
-    subcategory: '',
     brand: '',
-    gender: 'Unisex',
-    description: '',
     purchasePrice: 0,
     sellingPrice: 0,
     mrp: 0,
     taxPercent: 5,
-    discountPercent: 0,
     minStockLevel: 5,
-    supplier: '',
     variants: [
-      { size: 'M', color: 'Blue', barcode: String(Math.floor(100000 + Math.random() * 900000)), stock: 10 }
+      { size: 'M', color: 'Sky Blue', barcode: '', stock: 10 }
     ]
   });
 
   useEffect(() => {
     if (isOpen) {
-      loadDropdowns();
-      if (productToEdit) {
+      fetchMasterData();
+      if (productData) {
         setFormData({
-          name: productToEdit.name || '',
-          sku: productToEdit.sku || '',
-          category: productToEdit.category?._id || productToEdit.category || '',
-          subcategory: productToEdit.subcategory || '',
-          brand: productToEdit.brand?._id || productToEdit.brand || '',
-          gender: productToEdit.gender || 'Unisex',
-          description: productToEdit.description || '',
-          purchasePrice: productToEdit.purchasePrice || 0,
-          sellingPrice: productToEdit.sellingPrice || 0,
-          mrp: productToEdit.mrp || 0,
-          taxPercent: productToEdit.taxPercent || 5,
-          discountPercent: productToEdit.discountPercent || 0,
-          minStockLevel: productToEdit.minStockLevel || 5,
-          supplier: productToEdit.supplier?._id || productToEdit.supplier || '',
-          variants: productToEdit.variants?.length ? productToEdit.variants : []
+          name: productData.name,
+          sku: productData.sku,
+          category: productData.category?._id || productData.category || '',
+          brand: productData.brand?._id || productData.brand || '',
+          purchasePrice: productData.purchasePrice,
+          sellingPrice: productData.sellingPrice,
+          mrp: productData.mrp,
+          taxPercent: productData.taxPercent,
+          minStockLevel: productData.minStockLevel,
+          variants: productData.variants || []
         });
       } else {
-        // Reset
-        const randCode = String(Math.floor(100000 + Math.random() * 900000));
         setFormData({
           name: '',
-          sku: `SKU-${Date.now().toString().slice(-5)}`,
+          sku: '',
           category: '',
-          subcategory: '',
           brand: '',
-          gender: 'Unisex',
-          description: '',
           purchasePrice: 0,
           sellingPrice: 0,
           mrp: 0,
           taxPercent: 5,
-          discountPercent: 0,
           minStockLevel: 5,
-          supplier: '',
           variants: [
-            { size: 'M', color: 'Blue', barcode: randCode, stock: 10 }
+            { size: 'M', color: 'Sky Blue', barcode: `BAR-${Date.now().toString().slice(-6)}`, stock: 10 }
           ]
         });
       }
     }
-  }, [isOpen, productToEdit]);
+  }, [isOpen, productData]);
 
-  const loadDropdowns = async () => {
+  const fetchMasterData = async () => {
     try {
-      const [cRes, bRes, sRes] = await Promise.all([getCategories(), getBrands(), getSuppliers()]);
-      setCategories(cRes.categories || []);
-      setBrands(bRes.brands || []);
-      setSuppliers(sRes.suppliers || []);
-      if (!productToEdit && cRes.categories?.length > 0) {
-        setFormData((prev) => ({ ...prev, category: cRes.categories[0]._id }));
-      }
+      const [catRes, brandRes] = await Promise.all([getCategories(), getBrands()]);
+      setCategories(catRes.categories || []);
+      setBrands(brandRes.brands || []);
     } catch (err) {
       console.error(err);
     }
   };
 
   const handleAddVariant = () => {
-    const nextBarcode = String(Math.floor(100000 + Math.random() * 900000));
     setFormData({
       ...formData,
-      variants: [...formData.variants, { size: 'L', color: 'Blue', barcode: nextBarcode, stock: 5 }]
+      variants: [
+        ...formData.variants,
+        { size: 'L', color: 'White', barcode: `BAR-${Date.now().toString().slice(-6)}`, stock: 5 }
+      ]
     });
   };
 
   const handleRemoveVariant = (idx) => {
-    if (formData.variants.length <= 1) return;
-    const updated = formData.variants.filter((_, i) => i !== idx);
-    setFormData({ ...formData, variants: updated });
+    if (formData.variants.length === 1) return;
+    setFormData({
+      ...formData,
+      variants: formData.variants.filter((_, i) => i !== idx)
+    });
   };
 
-  const handleVariantChange = (idx, field, val) => {
+  const handleVariantChange = (idx, field, value) => {
     const updated = [...formData.variants];
-    updated[idx][field] = field === 'stock' ? Number(val) : val;
+    updated[idx][field] = value;
     setFormData({ ...formData, variants: updated });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSubmitting(true);
-
+    setLoading(true);
     try {
-      if (productToEdit) {
-        await updateProduct(productToEdit._id, formData);
+      if (productData) {
+        await updateProduct(productData._id, formData);
       } else {
         await createProduct(formData);
       }
@@ -130,71 +114,60 @@ export const ProductFormModal = ({ isOpen, onClose, productToEdit, onSaved }) =>
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save product');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
+
+  const inputClass = `w-full px-3 py-2 border rounded-xl text-xs font-medium outline-none ${
+    isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+  }`;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={productToEdit ? 'Edit Product & Variants' : 'Add New Product & Variants'}
-      maxWidth="max-w-4xl"
+      title={productData ? 'Edit Product & Variants' : 'Add New Product & Variants'}
+      maxWidth="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs rounded-lg">
+          <div className="p-3 bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs font-semibold rounded-xl">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Product Name *</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Product Name *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Men Silk Shirt"
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none focus:border-indigo-500"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Product SKU *</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SKU / Code *</label>
             <input
               type="text"
               required
               value={formData.sku}
               onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none focus:border-indigo-500 font-mono"
+              className={inputClass}
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Gender Segment</label>
-            <select
-              value={formData.gender}
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
-            >
-              <option value="Men">Men</option>
-              <option value="Women">Women</option>
-              <option value="Kids">Kids</option>
-              <option value="Unisex">Unisex</option>
-            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Category *</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Category *</label>
             <select
               required
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className={inputClass}
             >
               <option value="">Select Category</option>
               {categories.map((c) => (
@@ -206,13 +179,13 @@ export const ProductFormModal = ({ isOpen, onClose, productToEdit, onSaved }) =>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Brand</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Brand</label>
             <select
               value={formData.brand}
               onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className={inputClass}
             >
-              <option value="">Select Brand (Optional)</option>
+              <option value="">Select Brand</option>
               {brands.map((b) => (
                 <option key={b._id} value={b._id}>
                   {b.name}
@@ -220,159 +193,144 @@ export const ProductFormModal = ({ isOpen, onClose, productToEdit, onSaved }) =>
               ))}
             </select>
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Primary Supplier</label>
-            <select
-              value={formData.supplier}
-              onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
-            >
-              <option value="">Select Supplier (Optional)</option>
-              {suppliers.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Purchase Price (₹) *</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Purchase Price</label>
             <input
               type="number"
               min="0"
-              required
               value={formData.purchasePrice}
               onChange={(e) => setFormData({ ...formData, purchasePrice: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Selling Price (₹) *</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Selling Price *</label>
             <input
               type="number"
               min="0"
               required
               value={formData.sellingPrice}
               onChange={(e) => setFormData({ ...formData, sellingPrice: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">MRP Price (₹)</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">MRP</label>
             <input
               type="number"
               min="0"
               value={formData.mrp}
               onChange={(e) => setFormData({ ...formData, mrp: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">GST Tax Rate (%)</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">GST Tax (%)</label>
             <input
               type="number"
               min="0"
               value={formData.taxPercent}
               onChange={(e) => setFormData({ ...formData, taxPercent: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className={inputClass}
             />
           </div>
         </div>
 
-        {/* Product Variants Section */}
+        {/* Variants Section */}
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Product Variants (Size / Color / Barcode / Stock)</h3>
+            <label className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+              Product Variants (Size / Color / Barcode)
+            </label>
             <button
               type="button"
               onClick={handleAddVariant}
-              className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
+              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Variant</span>
             </button>
           </div>
 
-          <div className="border border-slate-800 rounded-lg overflow-hidden space-y-2 p-2 bg-slate-900/50">
+          <div className="space-y-2">
             {formData.variants.map((variant, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-900 p-2 rounded border border-slate-800">
-                <div className="col-span-3">
+              <div
+                key={idx}
+                className={`p-3 border rounded-xl grid grid-cols-1 sm:grid-cols-4 gap-2 items-center ${
+                  isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
+                <div>
                   <input
                     type="text"
-                    required
-                    placeholder="Size (S, M, L, XL, 32...)"
+                    placeholder="Size (e.g. S, M, 32)"
                     value={variant.size}
                     onChange={(e) => handleVariantChange(idx, 'size', e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded text-white text-xs outline-none"
+                    className={inputClass}
                   />
                 </div>
-                <div className="col-span-3">
+                <div>
                   <input
                     type="text"
-                    required
-                    placeholder="Color (Blue, Black...)"
+                    placeholder="Color (e.g. Red, Blue)"
                     value={variant.color}
                     onChange={(e) => handleVariantChange(idx, 'color', e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded text-white text-xs outline-none"
+                    className={inputClass}
                   />
                 </div>
-                <div className="col-span-3">
+                <div>
                   <input
                     type="text"
-                    required
                     placeholder="Barcode Number"
                     value={variant.barcode}
                     onChange={(e) => handleVariantChange(idx, 'barcode', e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded text-indigo-300 font-mono text-xs outline-none"
+                    className={inputClass}
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="number"
                     min="0"
-                    required
                     placeholder="Stock Qty"
                     value={variant.stock}
-                    onChange={(e) => handleVariantChange(idx, 'stock', e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded text-white font-bold text-xs outline-none"
+                    onChange={(e) => handleVariantChange(idx, 'stock', Number(e.target.value))}
+                    className={inputClass}
                   />
-                </div>
-                <div className="col-span-1 text-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveVariant(idx)}
-                    disabled={formData.variants.length <= 1}
-                    className="text-slate-500 hover:text-rose-400 disabled:text-slate-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {formData.variants.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveVariant(idx)}
+                      className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+        <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-700 text-slate-300 rounded text-xs font-semibold"
+            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={submitting}
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-extrabold cursor-pointer"
+            disabled={loading}
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold cursor-pointer"
           >
-            {submitting ? 'Saving...' : 'SAVE PRODUCT & VARIANTS'}
+            {loading ? 'Saving...' : 'Save Product'}
           </button>
         </div>
       </form>
