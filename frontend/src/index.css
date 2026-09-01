@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@layer base {
+  html.light body {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+
+  html.dark body {
+    background-color: #090d16;
+    color: #f8fafc;
+  }
+}
+
+/* Thermal receipt printing styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-receipt, #printable-receipt * {
+    visibility: visible;
+  }
+  #printable-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}

@@ -1,0 +1,124 @@
+import { Return } from '../models/Return.js';
+import { Sale } from '../models/Sale.js';
+import { updateVariantStock } from '../services/stockService.js';
+import { logAudit } from '../middleware/auditLogger.js';
+
+export const getReturns = async (req, res) => {
+  try {
+    const returns = await Return.find()
+      .populate('originalSale', 'invoiceNumber grandTotal')
+      .populate('processedBy', 'name')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: returns.length, returns });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const createReturn = async (req, res) => {
+  try {
+    const { saleId, items, refundMethod, reason } = req.body;
+
+    if (!saleId || !items || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Sale invoice ID and return items are required' });
+    }
+
+    const sale = await Sale.findById(saleId);
+    if (!sale) {
+      return res.status(404).json({ success: false, message: 'Original Sale Invoice not found' });
+    }
+
+    if (sale.status === 'Cancelled') {
+      return res.status(400).json({ success: false, message: 'Cannot process return for a cancelled invoice' });
+    }
+
+    const returnCount = await Return.countDocuments();
+    const returnNumber = `RET-${new Date().getFullYear()}-${String(returnCount + 1).padStart(6, '0')}`;
+
+    let totalRefundAmount = 0;
+    const processedReturnItems = [];
+
+    for (const retItem of items) {
+      const originalItem = sale.items.find(
+        (i) => i.variantBarcode === retItem.variantBarcode && i.product.toString() === retItem.product.toString()
+      );
+
+      if (!originalItem) {
+        return res.status(400).json({
+          success: false,
+          message: `Item with barcode "${retItem.variantBarcode}" was not part of original invoice`
+        });
+      }
+
+      if (retItem.quantity > originalItem.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Return quantity (${retItem.quantity}) exceeds purchased quantity (${originalItem.quantity})`
+        });
+      }
+
+      const itemRefund = Number(retItem.refundUnitPrice || originalItem.unitPrice) * retItem.quantity;
+      totalRefundAmount += itemRefund;
+
+      processedReturnItems.push({
+        product: originalItem.product,
+        productName: originalItem.productName,
+        variantBarcode: originalItem.variantBarcode,
+        size: originalItem.size,
+        color: originalItem.color,
+        quantity: retItem.quantity,
+        refundUnitPrice: retItem.refundUnitPrice || originalItem.unitPrice,
+        totalRefund: itemRefund
+      });
+
+      // Restore stock for returned item
+      await updateVariantStock({
+        productId: originalItem.product,
+        barcode: originalItem.variantBarcode,
+        quantity: retItem.quantity, // positive to increase stock
+        type: 'SalesReturn',
+        referenceId: sale._id,
+        referenceDocNumber: returnNumber,
+        user: req.user,
+        notes: `Sales Return #${returnNumber} against Invoice #${sale.invoiceNumber}`
+      });
+    }
+
+    const returnDoc = await Return.create({
+      returnNumber,
+      originalSale: sale._id,
+      originalInvoiceNumber: sale.invoiceNumber,
+      customer: sale.customer || null,
+      customerName: sale.customerName,
+      items: processedReturnItems,
+      totalRefundAmount,
+      refundMethod: refundMethod || 'Cash',
+      reason,
+      processedBy: req.user._id,
+      processedByName: req.user.name
+    });
+
+    // Update sale status
+    const allReturned = items.every((retItem) => {
+      const orig = sale.items.find((i) => i.variantBarcode === retItem.variantBarcode);
+      return orig && retItem.quantity === orig.quantity;
+    });
+
+    sale.status = allReturned ? 'Returned' : 'PartiallyReturned';
+    await sale.save();
+
+    await logAudit({
+      user: req.user,
+      action: 'PROCESS_RETURN',
+      module: 'RETURNS',
+      recordId: returnDoc._id,
+      details: `Processed Return #${returnNumber} for Invoice #${sale.invoiceNumber} (Refund: ₹${totalRefundAmount})`,
+      req
+    });
+
+    res.status(201).json({ success: true, returnDoc });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
