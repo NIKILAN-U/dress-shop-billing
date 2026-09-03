@@ -33,8 +33,14 @@ export const createReturn = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot process return for a cancelled invoice' });
     }
 
-    const returnCount = await Return.countDocuments();
-    const returnNumber = `RET-${new Date().getFullYear()}-${String(returnCount + 1).padStart(6, '0')}`;
+    const latestReturn = await Return.findOne().sort({ createdAt: -1 });
+    let nextNum = 1;
+    if (latestReturn && latestReturn.returnNumber) {
+      const parts = latestReturn.returnNumber.split('-');
+      const lastSeq = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+    }
+    const returnNumber = `RET-${new Date().getFullYear()}-${String(nextNum).padStart(6, '0')}`;
 
     let totalRefundAmount = 0;
     const processedReturnItems = [];
@@ -61,6 +67,12 @@ export const createReturn = async (req, res) => {
       const itemRefund = Number(retItem.refundUnitPrice || originalItem.unitPrice) * retItem.quantity;
       totalRefundAmount += itemRefund;
 
+      let reversedComm = 0;
+      if (originalItem.staff && originalItem.commissionAmount > 0) {
+        reversedComm = (originalItem.commissionAmount / originalItem.quantity) * retItem.quantity;
+        reversedComm = Math.round(reversedComm * 100) / 100;
+      }
+
       processedReturnItems.push({
         product: originalItem.product,
         productName: originalItem.productName,
@@ -69,7 +81,11 @@ export const createReturn = async (req, res) => {
         color: originalItem.color,
         quantity: retItem.quantity,
         refundUnitPrice: retItem.refundUnitPrice || originalItem.unitPrice,
-        totalRefund: itemRefund
+        totalRefund: itemRefund,
+        staff: originalItem.staff || null,
+        staffId: originalItem.staffId || null,
+        staffName: originalItem.staffName || null,
+        reversedCommissionAmount: reversedComm
       });
 
       // Restore stock for returned item

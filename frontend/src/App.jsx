@@ -23,6 +23,7 @@ import { Reports } from './pages/Reports';
 import { Users } from './pages/Users';
 import { Settings } from './pages/Settings';
 import { Backups } from './pages/Backups';
+import { StaffCommission } from './pages/StaffCommission';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user } = useSelector((state) => state.auth);
@@ -63,6 +64,7 @@ export default function App() {
           {/* Admin Restricted Routes */}
           <Route path="purchases" element={<ProtectedRoute adminOnly><Purchases /></ProtectedRoute>} />
           <Route path="suppliers" element={<ProtectedRoute adminOnly><Suppliers /></ProtectedRoute>} />
+          <Route path="staff-commission" element={<ProtectedRoute adminOnly><StaffCommission /></ProtectedRoute>} />
           <Route path="expenses" element={<ProtectedRoute adminOnly><Expenses /></ProtectedRoute>} />
           <Route path="reports" element={<ProtectedRoute adminOnly><Reports /></ProtectedRoute>} />
           <Route path="users" element={<ProtectedRoute adminOnly><Users /></ProtectedRoute>} />

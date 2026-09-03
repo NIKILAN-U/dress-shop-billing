@@ -22,6 +22,7 @@ const posSlice = createSlice({
 
       if (existingIndex > -1) {
         state.cart[existingIndex].quantity += quantity;
+        state.cart[existingIndex].availableStock = variant.stock;
       } else {
         const unitPrice = product.sellingPrice;
         state.cart.push({
@@ -70,6 +71,15 @@ const posSlice = createSlice({
         item.discountAmount = Math.max(0, Number(discountAmount || 0));
         const discountedPrice = item.unitPrice - item.discountAmount;
         item.totalAmount = Math.max(0, discountedPrice) * item.quantity;
+      }
+    },
+    updateCartItemStaff: (state, action) => {
+      const { barcode, staffId, staffMongoId, staffName } = action.payload;
+      const item = state.cart.find((i) => i.variantBarcode === barcode);
+      if (item) {
+        item.staff = staffMongoId || null;
+        item.staffId = staffId || null;
+        item.staffName = staffName || null;
       }
     },
     removeFromCart: (state, action) => {
@@ -143,6 +153,7 @@ export const {
   updateCartItemQty,
   updateCartItemUnitPrice,
   updateCartItemDiscount,
+  updateCartItemStaff,
   removeFromCart,
   clearCart,
   setSelectedCustomer,

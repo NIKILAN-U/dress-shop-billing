@@ -80,6 +80,8 @@ export const getProductByBarcode = async (req, res) => {
         mrp: product.mrp,
         taxPercent: product.taxPercent,
         discountPercent: product.discountPercent,
+        commissionType: product.commissionType || 'Percentage',
+        commissionValue: product.commissionValue || 0,
         selectedVariant: {
           variantId: variant._id,
           size: variant.size,
@@ -129,6 +131,8 @@ export const createProduct = async (req, res) => {
       discountPercent,
       minStockLevel,
       supplier,
+      commissionType,
+      commissionValue,
       variants
     } = req.body;
 
@@ -170,6 +174,8 @@ export const createProduct = async (req, res) => {
       discountPercent: discountPercent || 0,
       minStockLevel: minStockLevel || 5,
       supplier: supplier || null,
+      commissionType: commissionType || 'Percentage',
+      commissionValue: commissionValue || 0,
       variants: variants || []
     });
 
@@ -233,13 +239,39 @@ export const updateProduct = async (req, res) => {
       minStockLevel,
       supplier,
       status,
+      commissionType,
+      commissionValue,
       variants
     } = req.body;
 
     const oldValue = { name: product.name, sellingPrice: product.sellingPrice, variants: product.variants };
 
+    if (sku && sku.trim() !== product.sku) {
+      const existingSku = await Product.findOne({ sku: sku.trim(), _id: { $ne: product._id } });
+      if (existingSku) {
+        return res.status(400).json({ success: false, message: 'Product SKU already exists on another product' });
+      }
+      product.sku = sku.trim();
+    }
+
+    if (variants && variants.length > 0) {
+      const barcodes = variants.map((v) => v.barcode);
+      const uniqueBarcodes = new Set(barcodes);
+      if (uniqueBarcodes.size !== barcodes.length) {
+        return res.status(400).json({ success: false, message: 'Duplicate barcodes found in variants input' });
+      }
+
+      const existingBarcodeProduct = await Product.findOne({
+        'variants.barcode': { $in: barcodes },
+        _id: { $ne: product._id }
+      });
+      if (existingBarcodeProduct) {
+        return res.status(400).json({ success: false, message: 'One or more variant barcodes already exist on another product' });
+      }
+      product.variants = variants;
+    }
+
     if (name) product.name = name.trim();
-    if (sku) product.sku = sku.trim();
     if (category) product.category = category;
     if (subcategory !== undefined) product.subcategory = subcategory;
     if (brand !== undefined) product.brand = brand || null;
@@ -252,8 +284,9 @@ export const updateProduct = async (req, res) => {
     if (discountPercent !== undefined) product.discountPercent = discountPercent;
     if (minStockLevel !== undefined) product.minStockLevel = minStockLevel;
     if (supplier !== undefined) product.supplier = supplier || null;
+    if (commissionType !== undefined) product.commissionType = commissionType;
+    if (commissionValue !== undefined) product.commissionValue = commissionValue;
     if (status) product.status = status;
-    if (variants) product.variants = variants;
 
     await product.save();
 

@@ -9,7 +9,6 @@ import { useTheme } from '../context/ThemeContext';
 
 export const MainLayout = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const { theme } = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -29,14 +28,12 @@ export const MainLayout = () => {
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, [navigate]);
 
-  const isDark = theme === 'dark';
-
   return (
-    <div className={`min-h-screen flex flex-col transition-colors ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
       <Navbar onOpenShortcuts={() => setShowShortcuts(true)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className={`flex-1 overflow-y-auto p-6 transition-colors ${isDark ? 'bg-slate-950/60' : 'bg-slate-50'}`}>
+        <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
           <Outlet />
         </main>
       </div>

@@ -25,6 +25,8 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
     mrp: 0,
     taxPercent: 5,
     minStockLevel: 5,
+    commissionType: 'Percentage',
+    commissionValue: 0,
     variants: [
       { size: 'M', color: 'Sky Blue', barcode: '', stock: 10 }
     ]
@@ -44,6 +46,8 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
           mrp: productData.mrp,
           taxPercent: productData.taxPercent,
           minStockLevel: productData.minStockLevel,
+          commissionType: productData.commissionType || 'Percentage',
+          commissionValue: productData.commissionValue || 0,
           variants: productData.variants || []
         });
       } else {
@@ -57,6 +61,8 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
           mrp: 0,
           taxPercent: 5,
           minStockLevel: 5,
+          commissionType: 'Percentage',
+          commissionValue: 0,
           variants: [
             { size: 'M', color: 'Sky Blue', barcode: `BAR-${Date.now().toString().slice(-6)}`, stock: 10 }
           ]
@@ -104,10 +110,28 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
     setError('');
     setLoading(true);
     try {
+      const trimmedData = {
+        ...formData,
+        sku: formData.sku?.trim(),
+        name: formData.name?.trim(),
+        variants: formData.variants.map((v) => ({
+          ...v,
+          barcode: v.barcode?.trim()
+        }))
+      };
+
+      const barcodes = trimmedData.variants.map((v) => v.barcode);
+      const uniqueBarcodes = new Set(barcodes);
+      if (uniqueBarcodes.size !== barcodes.length) {
+        setError('Duplicate variant barcodes found. Each variant must have a unique barcode.');
+        setLoading(false);
+        return;
+      }
+
       if (productData) {
-        await updateProduct(productData._id, formData);
+        await updateProduct(productData._id, trimmedData);
       } else {
-        await createProduct(formData);
+        await createProduct(trimmedData);
       }
       onSaved();
       onClose();
@@ -118,9 +142,7 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
     }
   };
 
-  const inputClass = `w-full px-3 py-2 border rounded-xl text-xs font-medium outline-none ${
-    isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300 text-slate-900'
-  }`;
+  const inputClass = 'w-full px-3 py-2 border rounded-xl text-xs font-semibold outline-none bg-slate-50 border-slate-200 text-slate-900 focus:border-amber-500';
 
   return (
     <Modal
@@ -239,6 +261,41 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
               onChange={(e) => setFormData({ ...formData, taxPercent: Number(e.target.value) })}
               className={inputClass}
             />
+          </div>
+        </div>
+
+        {/* Staff Commission Configuration */}
+        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
+          <label className="block text-xs font-black text-amber-900 uppercase tracking-wider">
+            Staff Sales Commission Setting
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">Commission Calculation Type</label>
+              <select
+                value={formData.commissionType}
+                onChange={(e) => setFormData({ ...formData, commissionType: e.target.value })}
+                className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs"
+              >
+                <option value="Percentage">Percentage (%) of Selling Price</option>
+                <option value="Fixed">Fixed Amount (₹) per Item</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                {formData.commissionType === 'Percentage' ? 'Commission Rate (%)' : 'Commission Amount (₹)'}
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={formData.commissionValue}
+                onChange={(e) => setFormData({ ...formData, commissionValue: Number(e.target.value) })}
+                placeholder={formData.commissionType === 'Percentage' ? 'e.g. 5%' : 'e.g. ₹50'}
+                className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:border-amber-500 shadow-xs"
+              />
+            </div>
           </div>
         </div>
 

@@ -23,6 +23,8 @@ const productSchema = new mongoose.Schema(
     discountPercent: { type: Number, default: 0 },
     minStockLevel: { type: Number, default: 5 },
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
+    commissionType: { type: String, enum: ['Percentage', 'Fixed'], default: 'Percentage' },
+    commissionValue: { type: Number, default: 0, min: 0 },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     variants: [variantSchema]
   },

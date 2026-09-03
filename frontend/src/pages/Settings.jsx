@@ -68,119 +68,119 @@ export const Settings = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-white tracking-wide">Shop & POS System Settings</h1>
-        <p className="text-xs text-slate-400">Configure receipt headers, GST tax calculation, thermal paper width & cashier discount limits</p>
+        <h1 className="text-xl font-extrabold text-slate-900 tracking-wide">Shop & POS System Settings</h1>
+        <p className="text-xs text-slate-500 font-medium">Configure receipt headers, GST tax calculation, thermal paper width & cashier discount limits</p>
       </div>
 
       {message && (
-        <div className="p-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs rounded-xl flex items-center gap-2 font-medium">
-          <Check className="w-4 h-4" />
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-bold">
+          <Check className="w-4 h-4 text-emerald-600" />
           <span>{message}</span>
         </div>
       )}
 
       {error && (
-        <div className="p-3 bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs rounded-xl">
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
         {/* Shop Branding Section */}
         <div className="space-y-4">
-          <h2 className="text-sm font-bold text-indigo-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-extrabold text-amber-700 uppercase tracking-wider border-b border-slate-100 pb-2">
             Shop Branding & Contact Details
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Shop Name *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Shop Name *</label>
               <input
                 type="text"
                 required
                 value={formData.shopName}
                 onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Tagline</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Tagline</label>
               <input
                 type="text"
                 value={formData.tagline}
                 onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Phone Number</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
               <input
                 type="text"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">GSTIN Number</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">GSTIN Number</label>
               <input
                 type="text"
                 value={formData.gstNumber}
                 onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none focus:border-indigo-500 font-mono"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs outline-none focus:border-amber-500 font-mono font-bold"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Shop Address (Printed on Receipts)</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Shop Address (Printed on Receipts)</label>
             <textarea
               rows={2}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none focus:border-indigo-500"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             ></textarea>
           </div>
         </div>
 
         {/* Invoice & Printer Settings Section */}
         <div className="space-y-4 pt-2">
-          <h2 className="text-sm font-bold text-indigo-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+          <h2 className="text-sm font-extrabold text-amber-700 uppercase tracking-wider border-b border-slate-100 pb-2">
             Invoice & Thermal Printer Settings
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Invoice Number Prefix</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Invoice Number Prefix</label>
               <input
                 type="text"
                 value={formData.invoicePrefix}
                 onChange={(e) => setFormData({ ...formData, invoicePrefix: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white font-mono text-xs outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold text-xs outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Receipt Thermal Paper Width</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Receipt Thermal Paper Width</label>
               <select
                 value={formData.receiptWidth}
                 onChange={(e) => setFormData({ ...formData, receiptWidth: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none"
               >
                 <option value="80mm">80mm Standard Thermal Receipt</option>
                 <option value="58mm">58mm Compact Thermal Receipt</option>
@@ -189,60 +189,60 @@ export const Settings = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Currency Symbol</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Currency Symbol</label>
               <input
                 type="text"
                 value={formData.currencySymbol}
                 onChange={(e) => setFormData({ ...formData, currencySymbol: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none font-bold"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs outline-none font-bold"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-3 bg-slate-800/60 rounded-lg border border-slate-700/60 flex items-center justify-between">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-white">Enable GST Tax Billing</div>
-                <div className="text-[10px] text-slate-400">Calculate CGST/SGST on POS sales</div>
+                <div className="text-xs font-extrabold text-slate-900">Enable GST Tax Billing</div>
+                <div className="text-[10px] text-slate-500 font-medium">Calculate CGST/SGST on POS sales</div>
               </div>
               <input
                 type="checkbox"
                 checked={formData.enableGst}
                 onChange={(e) => setFormData({ ...formData, enableGst: e.target.checked })}
-                className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Default GST Rate (%)</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Default GST Rate (%)</label>
               <input
                 type="number"
                 min="0"
                 value={formData.defaultGstRate}
                 onChange={(e) => setFormData({ ...formData, defaultGstRate: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-bold outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Max Cashier Discount (%)</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Max Cashier Discount (%)</label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={formData.maxCashierDiscountPercent}
                 onChange={(e) => setFormData({ ...formData, maxCashierDiscountPercent: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-xs outline-none font-bold text-amber-400"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs outline-none font-extrabold text-amber-700"
               />
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end pt-4 border-t border-slate-800">
+        <div className="flex justify-end pt-4 border-t border-slate-100">
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
+            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md shadow-amber-500/20 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? 'Saving...' : 'SAVE CONFIGURATION SETTINGS'}</span>

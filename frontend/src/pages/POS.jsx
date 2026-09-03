@@ -5,6 +5,7 @@ import {
   updateCartItemQty,
   updateCartItemUnitPrice,
   updateCartItemDiscount,
+  updateCartItemStaff,
   removeFromCart,
   clearCart,
   setSelectedCustomer,
@@ -17,6 +18,7 @@ import {
 } from '../store/slices/posSlice';
 import { getProductByBarcode } from '../services/productService';
 import { createSale } from '../services/posService';
+import { getStaffMembers } from '../services/staffService';
 import { BarcodeScannerInput } from '../components/pos/BarcodeScannerInput';
 import { ProductSearchModal } from '../components/pos/ProductSearchModal';
 import { CustomerSelectModal } from '../components/pos/CustomerSelectModal';
@@ -64,6 +66,20 @@ export const POS = () => {
 
   const [scanError, setScanError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [activeStaffList, setActiveStaffList] = useState([]);
+
+  useEffect(() => {
+    fetchActiveStaff();
+  }, []);
+
+  const fetchActiveStaff = async () => {
+    try {
+      const res = await getStaffMembers({ status: 'Active' });
+      setActiveStaffList(res.staff || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const currencySymbol = settings?.currencySymbol || '₹';
 
@@ -225,22 +241,14 @@ export const POS = () => {
       {/* Main Billing Grid Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
         {/* Left Side: Cart Items Table with Editable Prices & Rupee Discounts */}
-        <div
-          className={`lg:col-span-2 border rounded-2xl flex flex-col overflow-hidden shadow-sm transition-colors ${
-            isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/60'
-          }`}
-        >
-          <div
-            className={`px-5 py-3 border-b flex items-center justify-between ${
-              isDark ? 'border-slate-800 bg-slate-800/40' : 'border-slate-100 bg-slate-50/80'
-            }`}
-          >
+        <div className="lg:col-span-2 border rounded-2xl flex flex-col overflow-hidden shadow-xs transition-colors bg-white border-slate-200">
+          <div className="px-5 py-3 border-b flex items-center justify-between border-slate-100 bg-slate-50/80">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-xs uppercase tracking-wider">Current Cart</span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 font-black">
+              <span className="font-extrabold text-xs uppercase tracking-wider text-slate-900">Current Cart</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-900 font-black border border-amber-200">
                 {cart.length} ITEMS
               </span>
-              <span className="text-[11px] text-slate-400 font-medium hidden sm:inline ml-2">
+              <span className="text-[11px] text-slate-500 font-semibold hidden sm:inline ml-2">
                 (Click price or discount to edit directly)
               </span>
             </div>
@@ -249,7 +257,7 @@ export const POS = () => {
               {heldBills.length > 0 && (
                 <button
                   onClick={() => setShowHeldDrawer(true)}
-                  className="px-3 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <PlayCircle className="w-3.5 h-3.5" />
                   <span>Held ({heldBills.length})</span>
@@ -260,17 +268,15 @@ export const POS = () => {
                 <>
                   <button
                     onClick={() => dispatch(holdCurrentBill())}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1 transition cursor-pointer border ${
-                      isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
-                    }`}
+                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                   >
-                    <PauseCircle className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Hold</span>
+                    <PauseCircle className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Hold Cart</span>
                   </button>
 
                   <button
                     onClick={() => dispatch(clearCart())}
-                    className="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                    className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Clear (F1)</span>
@@ -283,13 +289,13 @@ export const POS = () => {
           <div className="flex-1 overflow-y-auto p-4">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 select-none">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-slate-800/80 flex items-center justify-center text-indigo-500">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
                   <Tag className="w-8 h-8 stroke-1.5" />
                 </div>
-                <div className="text-base font-bold text-slate-700 dark:text-slate-200">POS Cart is Empty</div>
-                <p className="text-xs text-slate-500 max-w-xs text-center">
+                <div className="text-base font-extrabold text-slate-800">POS Cart is Empty</div>
+                <p className="text-xs text-slate-500 max-w-xs text-center font-medium">
                   Scan barcode with USB Scanner or press{' '}
-                  <kbd className="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold">
+                  <kbd className="px-2 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-800 font-bold">
                     F2
                   </kbd>{' '}
                   to search catalog
@@ -297,13 +303,10 @@ export const POS = () => {
               </div>
             ) : (
               <table className="w-full text-left text-xs">
-                <thead
-                  className={`uppercase text-[10px] font-bold tracking-wider sticky top-0 ${
-                    isDark ? 'bg-slate-800/90 text-slate-400' : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
+                <thead className="uppercase text-[10px] font-extrabold tracking-wider sticky top-0 bg-slate-100 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-3">Product / Variant</th>
+                    <th className="py-2.5 px-3 text-center">Assigned Staff</th>
                     <th className="py-2.5 px-3 text-center">Edit Price ({currencySymbol})</th>
                     <th className="py-2.5 px-3 text-center">Qty</th>
                     <th className="py-2.5 px-3 text-center">Discount ({currencySymbol})</th>
@@ -311,24 +314,62 @@ export const POS = () => {
                     <th className="py-2.5 px-3 text-center">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-100">
                   {cart.map((item) => {
                     const effectivePrice = Math.max(0, item.unitPrice - item.discountAmount);
                     return (
-                      <tr key={item.variantBarcode} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <tr key={item.variantBarcode} className="hover:bg-slate-50 transition">
                         <td className="py-3 px-3">
-                          <div className="font-extrabold text-slate-900 dark:text-white text-xs">{item.productName}</div>
+                          <div className="font-extrabold text-slate-900 text-xs">{item.productName}</div>
                           <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
-                            <span className="bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.2 rounded text-[10px] font-mono font-bold">
+                            <span className="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded text-[10px] font-mono font-bold">
                               {item.variantBarcode}
                             </span>
                             <span>
-                              Size: <strong className="text-slate-800 dark:text-slate-200 font-bold">{item.size}</strong>
+                              Size: <strong className="text-slate-800 font-extrabold">{item.size}</strong>
                             </span>
                             <span>
-                              Color: <strong className="text-slate-800 dark:text-slate-200 font-bold">{item.color}</strong>
+                              Color: <strong className="text-slate-800 font-extrabold">{item.color}</strong>
                             </span>
+                            {item.availableStock !== undefined && (
+                              <span
+                                className={`px-1.5 py-0.2 rounded text-[10px] font-extrabold ${
+                                  item.quantity > item.availableStock
+                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                }`}
+                              >
+                                Stock: {item.availableStock}
+                              </span>
+                            )}
                           </div>
+                        </td>
+
+                        {/* STAFF SELECTION DROPDOWN */}
+                        <td className="py-3 px-3 text-center">
+                          <select
+                            value={item.staff || ''}
+                            onChange={(e) => {
+                              const sId = e.target.value;
+                              const sObj = activeStaffList.find((s) => s._id === sId);
+                              dispatch(
+                                updateCartItemStaff({
+                                  barcode: item.variantBarcode,
+                                  staffMongoId: sObj?._id || null,
+                                  staffId: sObj?.staffId || null,
+                                  staffName: sObj?.name || null
+                                })
+                              );
+                            }}
+                            className="w-28 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs cursor-pointer"
+                          >
+                            <option value="">-- Select --</option>
+                            {activeStaffList.map((s) => (
+                              <option key={s._id} value={s._id}>
+                                {s.name} ({s.staffId})
+                              </option>
+                            ))}
+                          </select>
                         </td>
 
                         {/* EDITABLE UNIT PRICE INPUT */}
@@ -346,18 +387,14 @@ export const POS = () => {
                                   })
                                 )
                               }
-                              className={`w-20 px-2 py-1 border rounded text-center text-xs font-mono font-extrabold outline-none focus:border-indigo-600 ${
-                                isDark
-                                  ? 'bg-slate-800 border-slate-700 text-emerald-400'
-                                  : 'bg-white border-slate-300 text-emerald-600 shadow-xs'
-                              }`}
+                              className="w-20 px-2 py-1 border rounded-lg text-center text-xs font-mono font-extrabold outline-none focus:border-amber-500 bg-white border-slate-300 text-emerald-700 shadow-xs"
                             />
                           </div>
                         </td>
 
                         {/* QUANTITY +/- BUTTONS */}
                         <td className="py-3 px-3 text-center">
-                          <div className={`inline-flex items-center gap-1.5 border rounded-lg p-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                          <div className="inline-flex items-center gap-1.5 border rounded-lg p-1 bg-slate-50 border-slate-200">
                             <button
                               onClick={() =>
                                 dispatch(
@@ -367,11 +404,11 @@ export const POS = () => {
                                   })
                                 )
                               }
-                              className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded cursor-pointer"
+                              className="p-1 text-slate-500 hover:text-slate-900 rounded cursor-pointer"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="w-5 text-center font-black text-slate-900 dark:text-white">{item.quantity}</span>
+                            <span className="w-5 text-center font-black text-slate-900">{item.quantity}</span>
                             <button
                               onClick={() =>
                                 dispatch(
@@ -381,14 +418,14 @@ export const POS = () => {
                                   })
                                 )
                               }
-                              className="p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded cursor-pointer"
+                              className="p-1 text-slate-500 hover:text-slate-900 rounded cursor-pointer"
                             >
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
                         </td>
 
-                        {/* EDITABLE RUPEE DISCOUNT INPUT (e.g. ₹200 discount) */}
+                        {/* EDITABLE RUPEE DISCOUNT INPUT */}
                         <td className="py-3 px-3 text-center">
                           <div className="flex flex-col items-center">
                             <input
@@ -404,16 +441,14 @@ export const POS = () => {
                                   })
                                 )
                               }
-                              className={`w-20 px-2 py-1 border rounded text-center text-xs font-mono font-bold outline-none focus:border-indigo-600 ${
+                              className={`w-20 px-2 py-1 border rounded-lg text-center text-xs font-mono font-bold outline-none focus:border-amber-500 ${
                                 item.discountAmount > 0
-                                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 text-rose-600 dark:text-rose-300 font-extrabold'
-                                  : isDark
-                                  ? 'bg-slate-800 border-slate-700 text-white'
+                                  ? 'bg-rose-50 border-rose-300 text-rose-700 font-extrabold'
                                   : 'bg-white border-slate-300 text-slate-900'
                               }`}
                             />
                             {item.discountAmount > 0 && (
-                              <span className="text-[10px] text-rose-500 font-bold mt-0.5">
+                              <span className="text-[10px] text-rose-600 font-bold mt-0.5">
                                 (-{currencySymbol}{item.discountAmount} off)
                               </span>
                             )}
@@ -421,7 +456,7 @@ export const POS = () => {
                         </td>
 
                         <td className="py-3 px-3 text-right">
-                          <div className="font-black text-emerald-600 dark:text-emerald-400 text-xs">
+                          <div className="font-black text-emerald-600 text-xs">
                             {formatCurrency(item.totalAmount, currencySymbol)}
                           </div>
                           {item.discountAmount > 0 && (
@@ -449,27 +484,19 @@ export const POS = () => {
         </div>
 
         {/* Right Side: Bill Summary with WITH / WITHOUT GST Option & Fast Checkout */}
-        <div
-          className={`border rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-colors ${
-            isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/60'
-          }`}
-        >
+        <div className="border rounded-2xl p-5 flex flex-col justify-between shadow-xs transition-colors bg-white border-slate-200">
           <div className="space-y-4">
             {/* Customer Info Box */}
-            <div
-              className={`p-3 border rounded-xl flex items-center justify-between ${
-                isDark ? 'bg-slate-800/80 border-slate-700/80' : 'bg-slate-50 border-slate-200'
-              }`}
-            >
+            <div className="p-3 border rounded-xl flex items-center justify-between bg-slate-50 border-slate-200">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
                   <User className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <div className="text-xs font-extrabold text-slate-900 dark:text-white">
+                  <div className="text-xs font-extrabold text-slate-900">
                     {selectedCustomer ? selectedCustomer.name : 'Walk-in Customer'}
                   </div>
-                  <div className="text-[10px] text-slate-500">
+                  <div className="text-[10px] text-slate-500 font-semibold">
                     {selectedCustomer ? selectedCustomer.mobile : 'Standard Customer'}
                   </div>
                 </div>
@@ -477,7 +504,7 @@ export const POS = () => {
 
               <button
                 onClick={() => setShowCustomerModal(true)}
-                className="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-bold transition cursor-pointer"
+                className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-extrabold transition cursor-pointer"
               >
                 Change (F4)
               </button>
@@ -485,7 +512,7 @@ export const POS = () => {
 
             {/* WITH GST / WITHOUT GST OPTION SELECTOR */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-extrabold text-slate-700">
                 GST Billing Mode Option:
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -494,9 +521,7 @@ export const POS = () => {
                   onClick={() => dispatch(setIsGstBill(true))}
                   className={`py-2 px-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 border transition cursor-pointer ${
                     isGstBill
-                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                      : isDark
-                      ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-600/20'
                       : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -509,9 +534,7 @@ export const POS = () => {
                   onClick={() => dispatch(setIsGstBill(false))}
                   className={`py-2 px-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 border transition cursor-pointer ${
                     !isGstBill
-                      ? 'bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/20'
-                      : isDark
-                      ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                      ? 'bg-amber-500 border-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-extrabold'
                       : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -524,29 +547,29 @@ export const POS = () => {
             {/* Calculations Breakdown */}
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Subtotal</span>
-                <span className="font-extrabold text-slate-900 dark:text-white">{formatCurrency(subtotal, currencySymbol)}</span>
+                <span className="text-slate-500 font-semibold">Subtotal</span>
+                <span className="font-extrabold text-slate-900">{formatCurrency(subtotal, currencySymbol)}</span>
               </div>
 
               {itemDiscountTotal > 0 && (
-                <div className="flex justify-between text-rose-600 dark:text-rose-400 font-bold">
+                <div className="flex justify-between text-rose-600 font-bold">
                   <span>Item Discounts Total</span>
                   <span>-{formatCurrency(itemDiscountTotal, currencySymbol)}</span>
                 </div>
               )}
 
               <div className="flex justify-between items-center">
-                <span className="text-slate-500 font-medium flex items-center gap-1">
+                <span className="text-slate-500 font-semibold flex items-center gap-1">
                   <span>Bill Discount</span>
                   {calculatedBillDiscount > 0 && (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold">
+                    <span className="text-[10px] text-emerald-600 font-extrabold">
                       (-{formatCurrency(calculatedBillDiscount, currencySymbol)})
                     </span>
                   )}
                 </span>
                 <button
                   onClick={() => setShowDiscountModal(true)}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer"
+                  className="text-xs text-amber-700 font-extrabold hover:underline cursor-pointer"
                 >
                   {calculatedBillDiscount > 0 ? 'Edit' : 'Apply'}
                 </button>
@@ -554,17 +577,17 @@ export const POS = () => {
 
               {isGstBill && settings?.enableGst ? (
                 <>
-                  <div className="flex justify-between text-slate-500 text-[11px]">
+                  <div className="flex justify-between text-slate-500 text-[11px] font-semibold">
                     <span>CGST Total</span>
                     <span>{formatCurrency(cgstTotal, currencySymbol)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-500 text-[11px]">
+                  <div className="flex justify-between text-slate-500 text-[11px] font-semibold">
                     <span>SGST Total</span>
                     <span>{formatCurrency(sgstTotal, currencySymbol)}</span>
                   </div>
                 </>
               ) : (
-                <div className="flex justify-between text-amber-600 dark:text-amber-400 text-[11px] font-bold">
+                <div className="flex justify-between text-amber-700 text-[11px] font-black">
                   <span>Tax Billing</span>
                   <span>WITHOUT GST (PLAIN BILL)</span>
                 </div>
@@ -578,18 +601,18 @@ export const POS = () => {
               )}
             </div>
 
-            <hr className="border-slate-200 dark:border-slate-800" />
+            <hr className="border-slate-200" />
 
-            <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
-              <div className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
+              <div className="text-[11px] font-black text-emerald-800 uppercase tracking-wider">
                 Grand Total Amount
               </div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white mt-0.5">
+              <div className="text-3xl font-black text-slate-900 mt-0.5">
                 {formatCurrency(grandTotal, currencySymbol)}
               </div>
             </div>
 
-            {/* INSTANT 1-CLICK QUICK CHECKOUT (< 30 SEC BILL GENERATION) */}
+            {/* INSTANT 1-CLICK QUICK CHECKOUT */}
             {cart.length > 0 && (
               <div className="space-y-1.5 pt-1">
                 <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 text-center flex items-center justify-center gap-1">
@@ -609,7 +632,7 @@ export const POS = () => {
                   <button
                     disabled={submitting}
                     onClick={() => handleQuickPay('UPI')}
-                    className="py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer"
+                    className="py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer"
                   >
                     <QrCode className="w-4 h-4" />
                     <span>⚡ UPI / QR</span>
@@ -622,10 +645,10 @@ export const POS = () => {
           <button
             disabled={cart.length === 0 || submitting}
             onClick={() => setShowPaymentModal(true)}
-            className={`w-full py-3.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition cursor-pointer ${
+            className={`w-full py-3.5 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition cursor-pointer ${
               cart.length === 0
-                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 shadow-slate-900/20'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10'
             }`}
           >
             <CreditCard className="w-4 h-4" />

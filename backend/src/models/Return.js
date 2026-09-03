@@ -8,7 +8,11 @@ const returnItemSchema = new mongoose.Schema({
   color: { type: String, required: true },
   quantity: { type: Number, required: true, min: 1 },
   refundUnitPrice: { type: Number, required: true },
-  totalRefund: { type: Number, required: true }
+  totalRefund: { type: Number, required: true },
+  staff: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
+  staffId: { type: String, trim: true },
+  staffName: { type: String, trim: true },
+  reversedCommissionAmount: { type: Number, default: 0 }
 });
 
 const returnSchema = new mongoose.Schema(

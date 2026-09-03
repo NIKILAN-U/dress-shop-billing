@@ -14,8 +14,13 @@ const saleItemSchema = new mongoose.Schema({
   taxPercent: { type: Number, default: 0 },
   cgstAmount: { type: Number, default: 0 },
   sgstAmount: { type: Number, default: 0 },
-  igstAmount: { type: Number, default: 0 },
-  totalAmount: { type: Number, required: true }
+  totalAmount: { type: Number, required: true },
+  staff: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
+  staffId: { type: String, trim: true },
+  staffName: { type: String, trim: true },
+  commissionType: { type: String, enum: ['Percentage', 'Fixed'] },
+  commissionValue: { type: Number, default: 0 },
+  commissionAmount: { type: Number, default: 0 }
 });
 
 const paymentSplitSchema = new mongoose.Schema({

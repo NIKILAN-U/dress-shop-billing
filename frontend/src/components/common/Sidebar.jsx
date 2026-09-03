@@ -23,9 +23,7 @@ import {
 
 export const Sidebar = () => {
   const { user } = useSelector((state) => state.auth);
-  const { theme } = useTheme();
   const isAdmin = user?.role === 'admin';
-  const isDark = theme === 'dark';
 
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, role: 'all' },
@@ -45,6 +43,7 @@ export const Sidebar = () => {
     { label: 'Customers', path: '/customers', icon: Users, role: 'all' },
 
     { header: 'Management' },
+    { label: 'Staff & Commission', path: '/staff-commission', icon: Users, role: 'admin' },
     { label: 'Expenses', path: '/expenses', icon: Receipt, role: 'admin' },
     { label: 'Reports', path: '/reports', icon: BarChart3, role: 'admin' },
     { label: 'Staff Users', path: '/users', icon: UserCheck, role: 'admin' },
@@ -53,20 +52,14 @@ export const Sidebar = () => {
   ];
 
   return (
-    <aside
-      className={`w-60 border-r flex flex-col justify-between overflow-y-auto shrink-0 select-none transition-colors ${
-        isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
-      }`}
-    >
+    <aside className="w-60 border-r flex flex-col justify-between overflow-y-auto shrink-0 select-none bg-white border-slate-200 shadow-xs">
       <div className="py-4 px-3 space-y-1">
         {navItems.map((item, idx) => {
           if (item.header) {
             return (
               <div
                 key={idx}
-                className={`pt-4 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider ${
-                  isDark ? 'text-slate-500' : 'text-slate-400'
-                }`}
+                className="pt-4 pb-1 px-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-400"
               >
                 {item.header}
               </div>
@@ -83,10 +76,8 @@ export const Sidebar = () => {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : isDark
-                    ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-extrabold'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-amber-700'
                 }`
               }
             >
@@ -97,14 +88,8 @@ export const Sidebar = () => {
         })}
       </div>
 
-      <div
-        className={`p-3 m-3 rounded-xl border text-[11px] font-medium text-center ${
-          isDark
-            ? 'bg-slate-950/60 border-slate-800 text-slate-400'
-            : 'bg-slate-50 border-slate-200 text-slate-500'
-        }`}
-      >
-        <span>Dress Shop POS v1.0 • Local Engine</span>
+      <div className="p-3 m-3 rounded-xl border text-[11px] font-bold text-center bg-slate-50 border-slate-200 text-slate-500">
+        <span>Aura Textiles POS • Local Engine</span>
       </div>
     </aside>
   );

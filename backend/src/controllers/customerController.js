@@ -85,8 +85,15 @@ export const updateCustomer = async (req, res) => {
 
     const { name, mobile, email, address, gstNumber, status } = req.body;
 
+    if (mobile && mobile.trim() !== customer.mobile) {
+      const existing = await Customer.findOne({ mobile: mobile.trim(), _id: { $ne: customer._id } });
+      if (existing) {
+        return res.status(400).json({ success: false, message: 'Customer with this mobile number already exists' });
+      }
+      customer.mobile = mobile.trim();
+    }
+
     if (name) customer.name = name.trim();
-    if (mobile) customer.mobile = mobile.trim();
     if (email !== undefined) customer.email = email;
     if (address !== undefined) customer.address = address;
     if (gstNumber !== undefined) customer.gstNumber = gstNumber;

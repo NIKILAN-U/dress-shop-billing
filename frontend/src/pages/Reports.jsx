@@ -68,14 +68,14 @@ export const Reports = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-wide">Financial & Sales Analytics Reports</h1>
-          <p className="text-xs text-slate-400">Generate itemized sales revenue reports and estimated net profit analysis</p>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-wide">Financial & Sales Analytics Reports</h1>
+          <p className="text-xs text-slate-500 font-medium">Generate itemized sales revenue reports and estimated net profit analysis</p>
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={exportToExcel}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow-md shadow-emerald-600/20 cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Export to Excel</span>
@@ -84,12 +84,12 @@ export const Reports = () => {
       </div>
 
       {/* Date Filter & Tab Switcher */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex gap-2 bg-slate-800 p-1 rounded-xl w-full md:w-auto">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xs">
+        <div className="flex gap-2 bg-slate-100 p-1 rounded-xl w-full md:w-auto border border-slate-200">
           <button
             onClick={() => setActiveTab('sales')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTab === 'sales' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+              activeTab === 'sales' ? 'bg-amber-500 text-slate-950 shadow-xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -97,8 +97,8 @@ export const Reports = () => {
           </button>
           <button
             onClick={() => setActiveTab('profit')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTab === 'profit' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+              activeTab === 'profit' ? 'bg-amber-500 text-slate-950 shadow-xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <DollarSign className="w-4 h-4" />
@@ -111,17 +111,17 @@ export const Reports = () => {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-white outline-none"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold outline-none focus:border-amber-500 shadow-xs"
           />
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-white outline-none"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold outline-none focus:border-amber-500 shadow-xs"
           />
           <button
             type="submit"
-            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl shadow-xs cursor-pointer"
           >
             Apply Filter
           </button>
@@ -135,27 +135,27 @@ export const Reports = () => {
         <div className="space-y-6">
           {/* Summary KPI Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-              <div className="text-xs text-slate-400 font-semibold uppercase">Total Invoices</div>
-              <div className="text-2xl font-bold text-white mt-1">{salesReport?.summary?.totalBills || 0}</div>
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
+              <div className="text-[11px] text-slate-500 font-extrabold uppercase tracking-wider">Total Invoices</div>
+              <div className="text-2xl font-black text-slate-900 mt-1">{salesReport?.summary?.totalBills || 0}</div>
             </div>
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-              <div className="text-xs text-slate-400 font-semibold uppercase">Gross Sales Subtotal</div>
-              <div className="text-2xl font-bold text-white mt-1">{formatCurrency(salesReport?.summary?.totalSubtotal, symbol)}</div>
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
+              <div className="text-[11px] text-slate-500 font-extrabold uppercase tracking-wider">Gross Sales Subtotal</div>
+              <div className="text-2xl font-black text-slate-900 mt-1">{formatCurrency(salesReport?.summary?.totalSubtotal, symbol)}</div>
             </div>
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-              <div className="text-xs text-slate-400 font-semibold uppercase">Total Discounts Given</div>
-              <div className="text-2xl font-bold text-rose-400 mt-1">-{formatCurrency(salesReport?.summary?.totalDiscount, symbol)}</div>
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
+              <div className="text-[11px] text-slate-500 font-extrabold uppercase tracking-wider">Total Discounts Given</div>
+              <div className="text-2xl font-black text-rose-600 mt-1">-{formatCurrency(salesReport?.summary?.totalDiscount, symbol)}</div>
             </div>
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-              <div className="text-xs text-slate-400 font-semibold uppercase">Net Sales Revenue</div>
-              <div className="text-2xl font-bold text-emerald-400 mt-1">{formatCurrency(salesReport?.summary?.totalRevenue, symbol)}</div>
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
+              <div className="text-[11px] text-slate-500 font-extrabold uppercase tracking-wider">Net Sales Revenue</div>
+              <div className="text-2xl font-black text-emerald-600 mt-1">{formatCurrency(salesReport?.summary?.totalRevenue, symbol)}</div>
             </div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-800/80 uppercase text-[10px] text-slate-400">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-200 uppercase text-[10px] text-slate-500 font-extrabold">
                 <tr>
                   <th className="py-3 px-4">Invoice #</th>
                   <th className="py-3 px-4">Date</th>
@@ -165,15 +165,15 @@ export const Reports = () => {
                   <th className="py-3 px-4 text-right">Grand Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {salesReport?.sales?.map((s) => (
-                  <tr key={s._id} className="hover:bg-slate-800/40">
-                    <td className="py-3 px-4 font-bold text-indigo-400">{s.invoiceNumber}</td>
-                    <td className="py-3 px-4 text-slate-400">{new Date(s.createdAt).toLocaleDateString()}</td>
-                    <td className="py-3 px-4 text-white font-medium">{s.customerName}</td>
-                    <td className="py-3 px-4 text-slate-400">{s.cashierName || s.cashier?.name}</td>
-                    <td className="py-3 px-4">{s.paymentMethod}</td>
-                    <td className="py-3 px-4 text-right font-bold text-emerald-400">{formatCurrency(s.grandTotal, symbol)}</td>
+                  <tr key={s._id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-mono font-extrabold text-amber-800">{s.invoiceNumber}</td>
+                    <td className="py-3 px-4 text-slate-500 font-semibold">{new Date(s.createdAt).toLocaleDateString()}</td>
+                    <td className="py-3 px-4 text-slate-900 font-extrabold">{s.customerName}</td>
+                    <td className="py-3 px-4 text-slate-500 font-semibold">{s.cashierName || s.cashier?.name}</td>
+                    <td className="py-3 px-4 text-slate-700 font-semibold">{s.paymentMethod}</td>
+                    <td className="py-3 px-4 text-right font-black text-emerald-600">{formatCurrency(s.grandTotal, symbol)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -181,41 +181,41 @@ export const Reports = () => {
           </div>
         </div>
       ) : (
-        <div className="max-w-2xl mx-auto bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-          <h2 className="text-base font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-indigo-400" />
+        <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+          <h2 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-amber-600" />
             <span>Estimated Profit & Loss Calculation Breakdown</span>
           </h2>
 
           <div className="space-y-3 text-xs">
-            <div className="flex justify-between py-2 border-b border-slate-800">
-              <span className="text-slate-300 font-semibold">Total Sales Revenue (+)</span>
-              <span className="font-bold text-emerald-400 text-sm">{formatCurrency(profitReport?.salesRevenue, symbol)}</span>
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-700 font-bold">Total Sales Revenue (+)</span>
+              <span className="font-black text-emerald-600 text-sm">{formatCurrency(profitReport?.salesRevenue, symbol)}</span>
             </div>
 
-            <div className="flex justify-between py-2 border-b border-slate-800">
-              <span className="text-slate-300 font-semibold">Cost of Goods Sold (COGS) (-)</span>
-              <span className="font-bold text-rose-400 text-sm">-{formatCurrency(profitReport?.costOfGoodsSold, symbol)}</span>
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-700 font-bold">Cost of Goods Sold (COGS) (-)</span>
+              <span className="font-black text-rose-600 text-sm">-{formatCurrency(profitReport?.costOfGoodsSold, symbol)}</span>
             </div>
 
-            <div className="flex justify-between py-2 bg-slate-800/50 px-3 rounded text-indigo-300 font-bold">
+            <div className="flex justify-between py-2 bg-amber-50 border border-amber-200 px-3 rounded-xl text-amber-900 font-black">
               <span>Gross Profit (Sales - COGS)</span>
               <span>{formatCurrency(profitReport?.grossProfit, symbol)}</span>
             </div>
 
-            <div className="flex justify-between py-2 border-b border-slate-800">
-              <span className="text-slate-300 font-semibold">Total Discounts Allowed (-)</span>
-              <span className="font-bold text-slate-400">-{formatCurrency(profitReport?.totalDiscount, symbol)}</span>
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-700 font-bold">Total Discounts Allowed (-)</span>
+              <span className="font-extrabold text-slate-500">-{formatCurrency(profitReport?.totalDiscount, symbol)}</span>
             </div>
 
-            <div className="flex justify-between py-2 border-b border-slate-800">
-              <span className="text-slate-300 font-semibold">Total Operating Expenses (-)</span>
-              <span className="font-bold text-rose-400">-{formatCurrency(profitReport?.totalExpenses, symbol)}</span>
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-700 font-bold">Total Operating Expenses (-)</span>
+              <span className="font-black text-rose-600">-{formatCurrency(profitReport?.totalExpenses, symbol)}</span>
             </div>
 
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between mt-4">
-              <span className="font-extrabold uppercase text-xs text-emerald-400">Estimated Net Profit</span>
-              <span className="text-2xl font-black text-white">{formatCurrency(profitReport?.estimatedNetProfit, symbol)}</span>
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between mt-4">
+              <span className="font-black uppercase text-xs text-emerald-800">Estimated Net Profit</span>
+              <span className="text-2xl font-black text-slate-900">{formatCurrency(profitReport?.estimatedNetProfit, symbol)}</span>
             </div>
           </div>
         </div>

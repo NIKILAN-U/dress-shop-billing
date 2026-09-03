@@ -189,15 +189,21 @@ export const getProfitReport = async (req, res) => {
     const { startDate, endDate } = req.query;
     const dateQuery = {};
 
-    if (startDate || endDate) {
-      dateQuery.$gte = startDate ? new Date(startDate) : new Date(0);
-      const end = endDate ? new Date(endDate) : new Date();
-      end.setHours(23, 59, 59, 999);
-      dateQuery.$lte = end;
+    if (startDate) {
+      const parsedStart = new Date(startDate);
+      if (!isNaN(parsedStart.getTime())) dateQuery.$gte = parsedStart;
+    }
+
+    if (endDate) {
+      const parsedEnd = new Date(endDate);
+      if (!isNaN(parsedEnd.getTime())) {
+        parsedEnd.setHours(23, 59, 59, 999);
+        dateQuery.$lte = parsedEnd;
+      }
     }
 
     const salesMatch = { status: { $ne: 'Cancelled' } };
-    if (startDate || endDate) salesMatch.createdAt = dateQuery;
+    if (Object.keys(dateQuery).length > 0) salesMatch.createdAt = dateQuery;
 
     const sales = await Sale.find(salesMatch);
 

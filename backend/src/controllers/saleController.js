@@ -116,79 +116,125 @@ export const createSale = async (req, res) => {
       customerDoc = await Customer.findOne({ mobile: customerMobile.trim() });
     }
 
-    // Prepare Sale items & perform stock reduction
+    // Prepare Sale items & perform stock reduction with rollback safety
     const processedItems = [];
-    for (const item of items) {
-      // Deduct stock for variant
-      const { product, variant } = await updateVariantStock({
-        productId: item.product,
-        barcode: item.variantBarcode,
-        quantity: -item.quantity, // negative for sale reduction
-        type: 'Sale',
-        referenceDocNumber: invoiceNumber,
+    const updatedVariantsLog = [];
+
+    try {
+      for (const item of items) {
+        // Deduct stock for variant
+        const { product, variant } = await updateVariantStock({
+          productId: item.product,
+          barcode: item.variantBarcode,
+          quantity: -item.quantity, // negative for sale reduction
+          type: 'Sale',
+          referenceDocNumber: invoiceNumber,
+          user: req.user,
+          notes: `POS Sale Invoice #${invoiceNumber}`
+        });
+
+        updatedVariantsLog.push({
+          productId: product._id,
+          barcode: item.variantBarcode,
+          quantity: item.quantity
+        });
+
+        let commType = item.commissionType || product.commissionType || 'Percentage';
+        let commVal = item.commissionValue !== undefined ? item.commissionValue : (product.commissionValue || 0);
+        let commAmount = 0;
+
+        if (item.staff) {
+          if (commType === 'Percentage') {
+            commAmount = (item.totalAmount * commVal) / 100;
+          } else if (commType === 'Fixed') {
+            commAmount = commVal * item.quantity;
+          }
+        }
+        commAmount = Math.round(commAmount * 100) / 100;
+
+        processedItems.push({
+          product: product._id,
+          productName: product.name,
+          variantBarcode: item.variantBarcode,
+          size: item.size || variant.size,
+          color: item.color || variant.color,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          mrp: item.mrp || product.mrp,
+          purchasePrice: product.purchasePrice || 0,
+          discountAmount: item.discountAmount || 0,
+          taxPercent: item.taxPercent || 0,
+          cgstAmount: item.cgstAmount || 0,
+          sgstAmount: item.sgstAmount || 0,
+          igstAmount: item.igstAmount || 0,
+          totalAmount: item.totalAmount,
+          staff: item.staff || null,
+          staffId: item.staffId || null,
+          staffName: item.staffName || null,
+          commissionType: commType,
+          commissionValue: commVal,
+          commissionAmount: commAmount
+        });
+      }
+
+      const sale = await Sale.create({
+        invoiceNumber,
+        customer: customerDoc?._id || null,
+        customerName: customerDoc?.name || customerName || 'Walk-in Customer',
+        customerMobile: customerDoc?.mobile || customerMobile || '',
+        cashier: req.user._id,
+        cashierName: req.user.name,
+        items: processedItems,
+        subtotal,
+        itemDiscountTotal: itemDiscountTotal || 0,
+        billDiscountTotal: billDiscountTotal || 0,
+        taxableAmount,
+        cgstTotal: cgstTotal || 0,
+        sgstTotal: sgstTotal || 0,
+        igstTotal: igstTotal || 0,
+        taxTotal: taxTotal || 0,
+        roundOff: roundOff || 0,
+        grandTotal,
+        paymentMethod: paymentMethod || 'Cash',
+        payments: payments || [{ method: paymentMethod || 'Cash', amount: grandTotal }],
+        status: 'Completed',
+        notes
+      });
+
+      if (customerDoc) {
+        customerDoc.totalPurchases += grandTotal;
+        customerDoc.totalPaid += grandTotal;
+        await customerDoc.save();
+      }
+
+      await logAudit({
         user: req.user,
-        notes: `POS Sale Invoice #${invoiceNumber}`
+        action: 'CREATE_SALE',
+        module: 'POS_SALES',
+        recordId: sale._id,
+        details: `Generated Invoice #${sale.invoiceNumber} total ₹${sale.grandTotal} via ${sale.paymentMethod}`,
+        req
       });
 
-      processedItems.push({
-        product: product._id,
-        productName: product.name,
-        variantBarcode: item.variantBarcode,
-        size: item.size || variant.size,
-        color: item.color || variant.color,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        mrp: item.mrp || product.mrp,
-        purchasePrice: product.purchasePrice || 0,
-        discountAmount: item.discountAmount || 0,
-        taxPercent: item.taxPercent || 0,
-        cgstAmount: item.cgstAmount || 0,
-        sgstAmount: item.sgstAmount || 0,
-        igstAmount: item.igstAmount || 0,
-        totalAmount: item.totalAmount
-      });
+      res.status(201).json({ success: true, sale });
+    } catch (checkoutError) {
+      // Rollback stock for any items already processed before error
+      for (const log of updatedVariantsLog) {
+        try {
+          await updateVariantStock({
+            productId: log.productId,
+            barcode: log.barcode,
+            quantity: log.quantity, // positive to restore
+            type: 'Adjustment',
+            user: req.user,
+            notes: `Rollback stock due to checkout error on invoice #${invoiceNumber}`
+          });
+        } catch (rbErr) {
+          console.error('[Rollback Error]', rbErr);
+        }
+      }
+      throw checkoutError;
     }
-
-    const sale = await Sale.create({
-      invoiceNumber,
-      customer: customerDoc?._id || null,
-      customerName: customerDoc?.name || customerName || 'Walk-in Customer',
-      customerMobile: customerDoc?.mobile || customerMobile || '',
-      cashier: req.user._id,
-      cashierName: req.user.name,
-      items: processedItems,
-      subtotal,
-      itemDiscountTotal: itemDiscountTotal || 0,
-      billDiscountTotal: billDiscountTotal || 0,
-      taxableAmount,
-      cgstTotal: cgstTotal || 0,
-      sgstTotal: sgstTotal || 0,
-      igstTotal: igstTotal || 0,
-      taxTotal: taxTotal || 0,
-      roundOff: roundOff || 0,
-      grandTotal,
-      paymentMethod: paymentMethod || 'Cash',
-      payments: payments || [{ method: paymentMethod || 'Cash', amount: grandTotal }],
-      status: 'Completed',
-      notes
-    });
-
-    if (customerDoc) {
-      customerDoc.totalPurchases += grandTotal;
-      customerDoc.totalPaid += grandTotal;
-      await customerDoc.save();
-    }
-
-    await logAudit({
-      user: req.user,
-      action: 'CREATE_SALE',
-      module: 'POS_SALES',
-      recordId: sale._id,
-      details: `Generated Invoice #${sale.invoiceNumber} total ₹${sale.grandTotal} via ${sale.paymentMethod}`,
-      req
-    });
-
-    res.status(201).json({ success: true, sale });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

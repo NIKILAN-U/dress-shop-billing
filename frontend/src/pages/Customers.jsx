@@ -78,20 +78,20 @@ export const Customers = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-wide">Customer Directory</h1>
-          <p className="text-xs text-slate-400">View registered shop customers, mobile numbers & total purchase history</p>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-wide">Customer Directory</h1>
+          <p className="text-xs text-slate-500 font-medium">View registered shop customers, mobile numbers & total purchase history</p>
         </div>
 
         <button
           onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30 cursor-pointer"
+          className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow-md shadow-amber-500/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Add Customer</span>
         </button>
       </div>
 
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex gap-2">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex gap-2 shadow-xs">
         <form onSubmit={handleSearchSubmit} className="flex gap-2 w-full sm:w-80">
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -100,25 +100,25 @@ export const Customers = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search customer name or mobile..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white outline-none focus:border-indigo-500"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold outline-none focus:border-amber-500"
             />
           </div>
           <button
             type="submit"
-            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold"
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold"
           >
             Search
           </button>
         </form>
       </div>
 
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         {loading ? (
           <LoadingSpinner label="Loading customer directory..." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-800/80 uppercase text-[10px] text-slate-400">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-200 uppercase text-[10px] text-slate-500 font-extrabold">
                 <tr>
                   <th className="py-3 px-4">Customer Name</th>
                   <th className="py-3 px-4">Mobile Number</th>
@@ -127,19 +127,19 @@ export const Customers = () => {
                   <th className="py-3 px-4 text-center">Edit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {customers.map((c) => (
-                  <tr key={c._id} className="hover:bg-slate-800/40">
-                    <td className="py-3 px-4 font-bold text-white">{c.name}</td>
-                    <td className="py-3 px-4 font-mono text-indigo-400">{c.mobile}</td>
-                    <td className="py-3 px-4 text-slate-400">{c.email || '-'}</td>
-                    <td className="py-3 px-4 text-right font-bold text-emerald-400">
+                  <tr key={c._id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-extrabold text-slate-900">{c.name}</td>
+                    <td className="py-3 px-4 font-mono font-extrabold text-amber-800">{c.mobile}</td>
+                    <td className="py-3 px-4 text-slate-500 font-medium">{c.email || '-'}</td>
+                    <td className="py-3 px-4 text-right font-black text-emerald-600">
                       {formatCurrency(c.totalPurchases, symbol)}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => handleOpenModal(c)}
-                        className="p-1.5 text-slate-400 hover:text-indigo-400 rounded"
+                        className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-slate-100 rounded-lg transition"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -159,56 +159,56 @@ export const Customers = () => {
         maxWidth="max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-3">
-          {error && <div className="p-2.5 bg-rose-500/20 text-rose-300 text-xs rounded">{error}</div>}
+          {error && <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl">{error}</div>}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Customer Name *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Customer Name *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Mobile Number *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Number *</label>
             <input
               type="text"
               required
               value={formData.mobile}
               onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Address</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Address</label>
             <textarea
               rows={2}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             ></textarea>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded text-xs"
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold"
             >
               Save Customer
             </button>

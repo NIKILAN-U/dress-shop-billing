@@ -61,26 +61,26 @@ export const Users = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-wide">Staff & Cashier Users</h1>
-          <p className="text-xs text-slate-400">Manage cashier login credentials and access privileges</p>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-wide">Staff & Cashier Users</h1>
+          <p className="text-xs text-slate-500 font-medium">Manage cashier login credentials and access privileges</p>
         </div>
 
         <button
           onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30 cursor-pointer"
+          className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow-md shadow-amber-500/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Add Staff User</span>
         </button>
       </div>
 
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         {loading ? (
           <LoadingSpinner label="Loading staff users..." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-800/80 uppercase text-[10px] text-slate-400">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-200 uppercase text-[10px] text-slate-500 font-extrabold">
                 <tr>
                   <th className="py-3 px-4">Name</th>
                   <th className="py-3 px-4">Username</th>
@@ -90,18 +90,18 @@ export const Users = () => {
                   <th className="py-3 px-4 text-center">Edit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {users.map((u) => (
-                  <tr key={u._id} className="hover:bg-slate-800/40">
-                    <td className="py-3 px-4 font-bold text-white">{u.name}</td>
-                    <td className="py-3 px-4 text-indigo-400 font-mono">@{u.username}</td>
-                    <td className="py-3 px-4 text-slate-400">{u.mobile || '-'}</td>
+                  <tr key={u._id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 font-extrabold text-slate-900">{u.name}</td>
+                    <td className="py-3 px-4 text-amber-800 font-mono font-extrabold">@{u.username}</td>
+                    <td className="py-3 px-4 text-slate-500 font-medium">{u.mobile || '-'}</td>
                     <td className="py-3 px-4 text-center">
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] uppercase font-extrabold ${
                           u.role === 'admin'
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                         }`}
                       >
                         {u.role}
@@ -110,7 +110,7 @@ export const Users = () => {
                     <td className="py-3 px-4 text-center">
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
-                          u.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                          u.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-700'
                         }`}
                       >
                         {u.status}
@@ -119,7 +119,7 @@ export const Users = () => {
                     <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => handleOpenModal(u)}
-                        className="p-1.5 text-slate-400 hover:text-indigo-400 rounded"
+                        className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-slate-100 rounded-lg transition"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -139,39 +139,39 @@ export const Users = () => {
         maxWidth="max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-3">
-          {error && <div className="p-2.5 bg-rose-500/20 text-rose-300 text-xs rounded">{error}</div>}
+          {error && <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl">{error}</div>}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Full Name *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Username *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Username *</label>
             <input
               type="text"
               required
               disabled={!!editUser}
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none disabled:opacity-50"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-mono font-bold outline-none focus:border-amber-500 disabled:opacity-50"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Mobile Number</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Number</label>
             <input
               type="text"
               value={formData.mobile}
               onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
               Password {editUser ? '(Leave blank to keep unchanged)' : '*'}
             </label>
             <input
@@ -179,15 +179,15 @@ export const Users = () => {
               required={!editUser}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Role *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Role *</label>
             <select
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             >
               <option value="cashier">Cashier</option>
               <option value="admin">Admin</option>
@@ -197,13 +197,13 @@ export const Users = () => {
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded text-xs"
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold"
             >
               Save User
             </button>

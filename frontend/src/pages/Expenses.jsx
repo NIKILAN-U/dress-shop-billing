@@ -68,38 +68,38 @@ export const Expenses = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-wide">Expense Management</h1>
-          <p className="text-xs text-slate-400">Record shop operating expenses (Electricity, Rent, Salary, Transport)</p>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-wide">Expense Management</h1>
+          <p className="text-xs text-slate-500 font-medium">Record shop operating expenses (Electricity, Rent, Salary, Transport)</p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30 cursor-pointer"
+          className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow-md shadow-amber-500/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Record Expense</span>
         </button>
       </div>
 
-      <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between">
+      <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <div className="p-3 rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
             <Receipt className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs text-slate-400 font-semibold uppercase">Total Operating Expenses</div>
-            <div className="text-2xl font-black text-rose-400">{formatCurrency(totalExpense, symbol)}</div>
+            <div className="text-xs text-slate-500 font-extrabold uppercase">Total Operating Expenses</div>
+            <div className="text-2xl font-black text-rose-600">{formatCurrency(totalExpense, symbol)}</div>
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         {loading ? (
           <LoadingSpinner label="Loading expense records..." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-800/80 uppercase text-[10px] text-slate-400">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 border-b border-slate-200 uppercase text-[10px] text-slate-500 font-extrabold">
                 <tr>
                   <th className="py-3 px-4">Title & Description</th>
                   <th className="py-3 px-4">Category</th>
@@ -109,27 +109,27 @@ export const Expenses = () => {
                   <th className="py-3 px-4 text-center">Delete</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {expenses.map((e) => (
-                  <tr key={e._id} className="hover:bg-slate-800/40">
+                  <tr key={e._id} className="hover:bg-slate-50">
                     <td className="py-3 px-4">
-                      <div className="font-bold text-white">{e.title}</div>
-                      <div className="text-[11px] text-slate-400">{e.description || '-'}</div>
+                      <div className="font-extrabold text-slate-900">{e.title}</div>
+                      <div className="text-[11px] text-slate-500 font-medium">{e.description || '-'}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 font-semibold text-[10px]">
+                      <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px]">
                         {e.category}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-400">{formatDate(e.date)}</td>
-                    <td className="py-3 px-4">{e.paymentMethod}</td>
-                    <td className="py-3 px-4 text-right font-bold text-rose-400">
+                    <td className="py-3 px-4 text-slate-500 font-semibold">{formatDate(e.date)}</td>
+                    <td className="py-3 px-4 text-slate-700 font-semibold">{e.paymentMethod}</td>
+                    <td className="py-3 px-4 text-right font-black text-rose-600">
                       {formatCurrency(e.amount, symbol)}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => handleDelete(e._id)}
-                        className="p-1.5 text-slate-500 hover:text-rose-400 rounded"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -144,26 +144,26 @@ export const Expenses = () => {
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Record New Expense" maxWidth="max-w-md">
         <form onSubmit={handleSubmit} className="space-y-3">
-          {error && <div className="p-2.5 bg-rose-500/20 text-rose-300 text-xs rounded">{error}</div>}
+          {error && <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl">{error}</div>}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Expense Title *</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Expense Title *</label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g. Shop Monthly Electricity Bill"
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Category *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Category *</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
               >
                 <option value="Electricity">Electricity</option>
                 <option value="Rent">Rent</option>
@@ -176,24 +176,24 @@ export const Expenses = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Amount (₹) *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Amount (₹) *</label>
               <input
                 type="number"
                 min="0"
                 required
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none font-bold"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs outline-none font-bold"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Method</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Payment Method</label>
             <select
               value={formData.paymentMethod}
               onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             >
               <option value="Cash">Cash</option>
               <option value="UPI">UPI</option>
@@ -203,12 +203,12 @@ export const Expenses = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Description / Notes</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Description / Notes</label>
             <textarea
               rows={2}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-xs outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
             ></textarea>
           </div>
 
@@ -216,13 +216,13 @@ export const Expenses = () => {
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded text-xs font-semibold"
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-extrabold"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold"
             >
               Save Expense
             </button>

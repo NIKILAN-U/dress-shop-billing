@@ -219,13 +219,13 @@ const seedDB = async () => {
 
     // 7. Shop Settings Initial Setup
     await ShopSettings.create({
-      shopName: 'ELEGANCE DRESS SHOP',
-      tagline: 'Fashion & Ethnic Trends',
-      address: 'Main Commercial Road, Shop District',
+      shopName: 'AURA TEXTILES',
+      tagline: 'AURA — THE CLOTHING BRAND (Retail & Wholesale)',
+      address: 'W-12, SF.NO.594, Markkayankottai Road, Near Vilangu Karuppana Samy Kovil, Chinnamanur, Theni Dist, Tamil Nadu - 625515',
       phone: '+91 98765 43210',
-      email: 'sales@elegancedress.com',
-      gstNumber: '33AAAAA0000A1Z5',
-      invoicePrefix: 'INV-2026-',
+      email: 'contact@auratextiles.com',
+      gstNumber: '33HYUPP3790R1Z1',
+      invoicePrefix: 'AURA-2026-',
       nextInvoiceNumber: 1001,
       currencySymbol: '₹',
       enableGst: true,

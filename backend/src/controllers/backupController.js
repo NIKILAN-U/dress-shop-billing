@@ -1,9 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import { logAudit } from '../middleware/auditLogger.js';
 
-const BACKUP_DIR = path.resolve(process.cwd(), '../backups');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const BACKUP_DIR = path.resolve(__dirname, '../../../backups');
 
 const ensureBackupDir = () => {
   if (!fs.existsSync(BACKUP_DIR)) {
