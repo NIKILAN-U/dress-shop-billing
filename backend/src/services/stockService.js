@@ -25,9 +25,16 @@ export const updateVariantStock = async ({
   notes,
   allowNegative = false
 }) => {
-  const product = await Product.findById(productId);
+  let product = null;
+  if (productId) {
+    product = await Product.findById(productId);
+  }
+  if (!product && barcode) {
+    product = await Product.findOne({ 'variants.barcode': barcode });
+  }
+
   if (!product) {
-    throw new Error(`Product not found: ${productId}`);
+    throw new Error(`Product not found for ID: ${productId} / Barcode: ${barcode}`);
   }
 
   const variant = product.variants.find((v) => v.barcode === barcode);

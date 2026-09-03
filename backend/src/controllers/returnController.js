@@ -99,30 +99,38 @@ export const createReturn = async (req, res) => {
       });
 
       // Restore stock for returned item
-      await updateVariantStock({
-        productId: originalItem.product,
-        barcode: originalItem.variantBarcode,
-        quantity: retItem.quantity, // positive to increase stock
-        type: 'SalesReturn',
-        referenceId: sale._id,
-        referenceDocNumber: returnNumber,
-        user: req.user,
-        notes: `Sales Return #${returnNumber} against Invoice #${sale.invoiceNumber}`
-      });
+      try {
+        await updateVariantStock({
+          productId: originalItem.product,
+          barcode: originalItem.variantBarcode,
+          quantity: retItem.quantity, // positive to increase stock
+          type: 'SalesReturn',
+          referenceId: sale._id,
+          referenceDocNumber: returnNumber,
+          user: req.user,
+          notes: `Sales Return #${returnNumber} against Invoice #${sale.invoiceNumber}`
+        });
+      } catch (stockErr) {
+        console.warn(`[Return Stock Warning] Could not update stock for barcode ${originalItem.variantBarcode}: ${stockErr.message}`);
+      }
     }
 
     // Deduct stock for replacement exchange item if provided
-    if (refundMethod === 'Exchange' && exchangeProductId && exchangeBarcode) {
-      await updateVariantStock({
-        productId: exchangeProductId,
-        barcode: exchangeBarcode,
-        quantity: -1, // negative to deduct stock
-        type: 'ExchangeIssue',
-        referenceId: sale._id,
-        referenceDocNumber: returnNumber,
-        user: req.user,
-        notes: `Product Exchange issued for Return #${returnNumber}`
-      });
+    if (refundMethod === 'Exchange' && exchangeBarcode) {
+      try {
+        await updateVariantStock({
+          productId: exchangeProductId,
+          barcode: exchangeBarcode,
+          quantity: -1, // negative to deduct stock
+          type: 'ExchangeIssue',
+          referenceId: sale._id,
+          referenceDocNumber: returnNumber,
+          user: req.user,
+          notes: `Product Exchange issued for Return #${returnNumber}`
+        });
+      } catch (exchangeStockErr) {
+        console.warn(`[Exchange Stock Warning] Could not deduct replacement stock for barcode ${exchangeBarcode}: ${exchangeStockErr.message}`);
+      }
     }
 
     const returnDoc = await Return.create({
