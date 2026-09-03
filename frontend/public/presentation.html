@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aura Textiles POS — System Architecture & Feature Presentation</title>
+  <title>Aura Textiles POS — Client Master Presentation & User Guide</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
@@ -17,32 +17,34 @@
       margin: 0;
       padding: 0;
     }
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+    html, body {
       background: #0f172a;
       color: #f8fafc;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     .slide {
-      width: 100vw;
-      height: 100vh;
+      width: 11in;
+      height: 8.5in;
       page-break-after: always;
+      page-break-inside: avoid;
       break-after: page;
+      break-inside: avoid;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 3rem 4rem;
+      padding: 2.25rem 3.25rem;
       position: relative;
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       overflow: hidden;
     }
     .slide-bg-glow {
       position: absolute;
-      top: -10%;
-      right: -10%;
-      width: 600px;
-      height: 600px;
+      top: -15%;
+      right: -15%;
+      width: 650px;
+      height: 650px;
       background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
       border-radius: 50%;
       pointer-events: none;
@@ -51,8 +53,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-b: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 0.85rem;
     }
     .brand-tag {
       font-size: 0.85rem;
@@ -60,39 +62,36 @@
       letter-spacing: 2px;
       text-transform: uppercase;
       color: #f59e0b;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
     }
     .slide-title {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 900;
       color: #ffffff;
-      margin-top: 0.5rem;
+      margin-top: 0.25rem;
     }
     .slide-body {
       flex: 1;
-      margin: 2rem 0;
+      margin: 1.5rem 0;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2.5rem;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 2rem;
       align-items: center;
     }
     .slide-body.full-width {
       grid-template-columns: 1fr;
     }
     .feature-card {
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 1.25rem;
-      padding: 1.75rem;
-      backdrop-filter: blur(10px);
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
     }
     .feature-title {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 800;
       color: #fbbf24;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.85rem;
     }
     .feature-list {
       list-style: none;
@@ -101,12 +100,12 @@
       gap: 0.75rem;
     }
     .feature-list li {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: #cbd5e1;
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
-      line-height: 1.5;
+      gap: 0.65rem;
+      line-height: 1.45;
     }
     .feature-list li strong {
       color: #ffffff;
@@ -115,46 +114,47 @@
       background: rgba(245, 158, 11, 0.2);
       color: #fbbf24;
       border: 1px solid rgba(245, 158, 11, 0.4);
-      padding: 0.25rem 0.75rem;
+      padding: 0.35rem 0.85rem;
       border-radius: 9999px;
       font-size: 0.75rem;
       font-weight: 800;
       text-transform: uppercase;
     }
     .metric-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
     .metric-box {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(245, 158, 11, 0.35);
       border-radius: 1rem;
-      padding: 1.5rem;
+      padding: 1.25rem;
       text-align: center;
     }
     .metric-val {
-      font-size: 2.25rem;
+      font-size: 2rem;
       font-weight: 900;
       color: #f59e0b;
       font-family: 'JetBrains Mono', monospace;
     }
     .metric-lbl {
-      font-size: 0.8rem;
-      font-weight: 700;
+      font-size: 0.75rem;
+      font-weight: 800;
       color: #94a3b8;
       text-transform: uppercase;
-      margin-top: 0.5rem;
+      margin-top: 0.25rem;
+      letter-spacing: 1px;
     }
     .slide-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-t: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 1rem;
-      font-size: 0.8rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding-top: 0.85rem;
+      font-size: 0.75rem;
       color: #64748b;
-      font-weight: 600;
+      font-weight: 700;
     }
     .download-bar {
       position: fixed;
@@ -170,13 +170,10 @@
       border: none;
       cursor: pointer;
       box-shadow: 0 20px 25px -5px rgba(245, 158, 11, 0.4);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
     }
     @media print {
       .download-bar {
-        display: none;
+        display: none !important;
       }
     }
   </style>
@@ -184,7 +181,7 @@
 <body>
 
   <button class="download-bar" onclick="window.print()">
-    <span>📄 Download Presentation Deck as PDF</span>
+    📄 Save Client Presentation Deck as PDF
   </button>
 
   <!-- SLIDE 1: COVER SLIDE -->
@@ -192,127 +189,238 @@
     <div class="slide-bg-glow"></div>
     <div class="slide-header">
       <div class="brand-tag">Aura Textiles — Retail & Wholesale</div>
-      <div class="badge">Desktop Binary Release v1.0.0</div>
+      <div class="badge">Master Client Pitch & User Guide</div>
     </div>
     <div class="slide-body full-width" style="text-align: center; justify-content: center;">
-      <div style="max-width: 800px; margin: 0 auto; space-y: 1.5rem;">
-        <h1 style="font-size: 3.5rem; font-weight: 900; line-height: 1.1; color: #ffffff;">
+      <div style="max-width: 850px; margin: 0 auto;">
+        <h1 style="font-size: 3.6rem; font-weight: 900; line-height: 1.1; color: #ffffff; letter-spacing: -1px;">
           AURA TEXTILES <span style="color: #f59e0b;">POS</span>
         </h1>
-        <p style="font-size: 1.35rem; color: #cbd5e1; font-weight: 600; margin-top: 1rem;">
-          Enterprise Point-of-Sale, Barcode Management & Staff Commission Software
+        <p style="font-size: 1.3rem; color: #cbd5e1; font-weight: 700; margin-top: 1rem;">
+          Complete Enterprise Billing, Barcode Labeling, Staff Commission & Inventory Software
         </p>
-        <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
-          <span class="badge" style="padding: 0.5rem 1.25rem; font-size: 0.85rem;">GSTIN: 33HYUPP3790R1Z1</span>
-          <span class="badge" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.4);">Pure Light Theme UI</span>
-          <span class="badge" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; background: rgba(99, 102, 241, 0.2); color: #818cf8; border-color: rgba(99, 102, 241, 0.4);">Windows Desktop Installer (.exe)</span>
+        <div style="display: flex; justify-content: center; gap: 0.85rem; margin-top: 2rem;">
+          <span class="badge" style="padding: 0.45rem 1.1rem; font-size: 0.8rem;">GSTIN: 33HYUPP3790R1Z1</span>
+          <span class="badge" style="padding: 0.45rem 1.1rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.4);">Pure Light Theme UI</span>
+          <span class="badge" style="padding: 0.45rem 1.1rem; font-size: 0.8rem; background: rgba(99, 102, 241, 0.2); color: #818cf8; border-color: rgba(99, 102, 241, 0.4);">Windows Desktop App (.exe)</span>
         </div>
       </div>
     </div>
     <div class="slide-footer">
-      <span>Proprietor: Vijayaregunathan Palanisamy | Chinnamanur, Theni</span>
-      <span>Confidential & Proprietary Prototype Deck</span>
+      <span>Proprietor: Vijayaregunathan Palanisamy | Markkayankottai Road, Chinnamanur, Theni</span>
+      <span>Slide 1 of 12</span>
     </div>
   </div>
 
-  <!-- SLIDE 2: CORE POS TERMINAL & BARCODE SCANNER -->
+  <!-- SLIDE 2: LOG IN & ROLE ACCESS CONTROL -->
   <div class="slide">
     <div class="slide-bg-glow"></div>
     <div class="slide-header">
       <div>
-        <div class="brand-tag">Module 01</div>
-        <div class="slide-title">POS Billing & Thermal Receipt Terminal</div>
+        <div class="brand-tag">User Guide 01</div>
+        <div class="slide-title">System Authentication & Role Access Control</div>
+      </div>
+      <div class="badge">Admin & Cashier Roles</div>
+    </div>
+    <div class="slide-body">
+      <div class="feature-card">
+        <div class="feature-title">Secure Credentials & Module Permissions</div>
+        <ul class="feature-list">
+          <li>✔ <strong>Admin Access (`admin` / `admin123`):</strong> Full control over shop settings, staff commissions, barcode generation, database backups, and reports.</li>
+          <li>✔ <strong>Cashier Access (`cashier` / `cashier123`):</strong> Fast billing terminal access for customer checkout, sales returns, and barcode scanner operations.</li>
+          <li>✔ <strong>JWT Token Security:</strong> Encrypted authorization tokens ensure secure multi-user billing sessions without unauthorized data access.</li>
+          <li>✔ <strong>Pure Light Theme Interface:</strong> High-contrast, bright retail shop design tailored for optical clarity on store monitors.</li>
+        </ul>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-val">2 Roles</div>
+          <div class="metric-lbl">Admin & Cashier</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">100%</div>
+          <div class="metric-lbl">Session Security</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 2 of 12</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: EXECUTIVE DASHBOARD -->
+  <div class="slide">
+    <div class="slide-bg-glow"></div>
+    <div class="slide-header">
+      <div>
+        <div class="brand-tag">User Guide 02</div>
+        <div class="slide-title">Executive Dashboard & Real-Time Analytics</div>
+      </div>
+      <div class="badge">Live Shop Insights</div>
+    </div>
+    <div class="slide-body">
+      <div class="feature-card">
+        <div class="feature-title">Real-Time Business Overview</div>
+        <ul class="feature-list">
+          <li>✔ <strong>Today's Sales Revenue:</strong> Instant total billing revenue counter updated on every completed invoice.</li>
+          <li>✔ <strong>Total Active Inventory Value:</strong> Live total stock monetary valuation across all dress variants.</li>
+          <li>✔ <strong>Monthly Sales Charts:</strong> Visual revenue trends and payment method breakdowns (Cash, UPI, Card, Credit).</li>
+          <li>✔ <strong>Low Stock Warning Alerts:</strong> Automatic banner notifying shop manager when dress items fall below threshold stock.</li>
+        </ul>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-val">Real-time</div>
+          <div class="metric-lbl">Revenue Counter</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">1-Click</div>
+          <div class="metric-lbl">Quick Navigation</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 3 of 12</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: POS BILLING TERMINAL -->
+  <div class="slide">
+    <div class="slide-bg-glow"></div>
+    <div class="slide-header">
+      <div>
+        <div class="brand-tag">User Guide 03</div>
+        <div class="slide-title">POS Billing Terminal & Thermal Receipts</div>
       </div>
       <div class="badge">USB Scanner Ready</div>
     </div>
     <div class="slide-body">
       <div class="feature-card">
-        <div class="feature-title">High-Speed Checkout Engine</div>
+        <div class="feature-title">High-Speed Customer Checkout</div>
         <ul class="feature-list">
-          <li><strong>Instant Barcode Scanner Integration:</strong> Scans CODE128 barcodes directly into cart with auto-focus.</li>
-          <li><strong>Staff Selection per Line Item:</strong> Assign sales staff to individual items for commission tracking.</li>
-          <li><strong>Multi-Payment & Split Bills:</strong> Supports Cash, UPI (GPay/PhonePe), Card, and Store Credit.</li>
-          <li><strong>Thermal Receipt Printing:</strong> 2-inch and 3-inch thermal bill printing with GST tax breakdown.</li>
+          <li>✔ <strong>Instant USB Barcode Scanning:</strong> Scans CODE128 dress barcodes directly into cart with automatic focus.</li>
+          <li>✔ <strong>Staff Selection per Line Item:</strong> Assign attending sales staff to individual dresses for commission tracking.</li>
+          <li>✔ <strong>Multi-Payment & Discounts:</strong> Supports Cash, UPI (GPay/PhonePe), Card, and Store Credit with discount %.</li>
+          <li>✔ <strong>Thermal Bill Printing:</strong> Auto-prints 2-inch or 3-inch thermal receipts with shop header, GSTIN, & items list.</li>
         </ul>
       </div>
-      <div class="metric-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="metric-grid">
         <div class="metric-box">
           <div class="metric-val">1.2s</div>
-          <div class="metric-lbl">Item Scan & Cart Addition</div>
+          <div class="metric-lbl">Scan to Cart Speed</div>
         </div>
         <div class="metric-box">
-          <div class="metric-val">100%</div>
-          <div class="metric-lbl">GST Tax Accuracy</div>
+          <div class="metric-val">2" / 3"</div>
+          <div class="metric-lbl">Thermal Printer Support</div>
         </div>
       </div>
     </div>
     <div class="slide-footer">
-      <span>Aura Textiles POS System Architecture</span>
-      <span>Slide 2 of 6</span>
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 4 of 12</span>
     </div>
   </div>
 
-  <!-- SLIDE 3: BARCODE MANAGEMENT SYSTEM -->
+  <!-- SLIDE 5: PRODUCT CATALOG & VARIANTS -->
   <div class="slide">
     <div class="slide-bg-glow"></div>
     <div class="slide-header">
       <div>
-        <div class="brand-tag">Module 02</div>
-        <div class="slide-title">CODE128 Barcode Management System</div>
+        <div class="brand-tag">User Guide 04</div>
+        <div class="slide-title">Product Catalog & Variant Management</div>
       </div>
-      <div class="badge">Thermal Label 50mm x 25mm</div>
+      <div class="badge">Size & Color Matrix</div>
     </div>
     <div class="slide-body">
       <div class="feature-card">
-        <div class="feature-title">Barcode Generation & Thermal Labels</div>
+        <div class="feature-title">Dress Catalog & Pricing Matrix</div>
         <ul class="feature-list">
-          <li><strong>Automatic Barcode Assignment:</strong> Every new product auto-generates a unique CODE128 barcode.</li>
-          <li><strong>Bulk Barcode Generation:</strong> 1-click batch generation for catalog items missing barcodes.</li>
-          <li><strong>Thermal Label Print Modal:</strong> Renders 50mm x 25mm labels with Shop Title, MRP, Offer Price, & Barcode.</li>
-          <li><strong>Audit Log Tracking:</strong> Audit log records all barcode prints, stock changes, and regenerations.</li>
+          <li>✔ <strong>Size & Color Variants:</strong> Manage dresses with multiple sizes (S, M, L, XL, Free Size) and colors (Red, Blue, Maroon).</li>
+          <li>✔ <strong>SKU, MRP & Selling Price:</strong> Store cost price, MRP, selling price, and GST tax percentage (0%, 5%, 12%, 18%).</li>
+          <li>✔ <strong>Category & Brand Filtering:</strong> Organize inventory into Saree, Shirt, Jeans, Kurti, and Brand tags.</li>
+          <li>✔ <strong>Stock Inventory Levels:</strong> Monitor active stock per variant with instant stock adjustments.</li>
         </ul>
       </div>
-      <div class="metric-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="metric-grid">
         <div class="metric-box">
-          <div class="metric-val">CODE128</div>
-          <div class="metric-lbl">Standard Vector SVG</div>
+          <div class="metric-val">Matrix</div>
+          <div class="metric-lbl">Size & Color Variants</div>
         </div>
         <div class="metric-box">
-          <div class="metric-val">50x25mm</div>
-          <div class="metric-lbl">Label Print Specification</div>
+          <div class="metric-val">GST</div>
+          <div class="metric-lbl">Auto Tax Rate Specs</div>
         </div>
       </div>
     </div>
     <div class="slide-footer">
-      <span>Aura Textiles POS System Architecture</span>
-      <span>Slide 3 of 6</span>
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 5 of 12</span>
     </div>
   </div>
 
-  <!-- SLIDE 4: STAFF COMMISSION SYSTEM -->
+  <!-- SLIDE 6: CODE128 BARCODE SYSTEM -->
   <div class="slide">
     <div class="slide-bg-glow"></div>
     <div class="slide-header">
       <div>
-        <div class="brand-tag">Module 03</div>
-        <div class="slide-title">Staff-wise Product Commission System</div>
+        <div class="brand-tag">User Guide 05</div>
+        <div class="slide-title">CODE128 Barcode Management & Labels</div>
+      </div>
+      <div class="badge">50mm x 25mm Thermal Label</div>
+    </div>
+    <div class="slide-body">
+      <div class="feature-card">
+        <div class="feature-title">Barcode Generation & Label Printing</div>
+        <ul class="feature-list">
+          <li>✔ <strong>Automatic Barcode Assignment:</strong> Every new product auto-generates a unique CODE128 barcode.</li>
+          <li>✔ <strong>1-Click Bulk Generation:</strong> Batch generate barcodes for all products missing barcodes in catalog.</li>
+          <li>✔ <strong>50x25mm Label Print Modal:</strong> Renders thermal barcode stickers with Shop Name, Size, MRP, Offer Price, & Barcode.</li>
+          <li>✔ <strong>Audit Print Logs:</strong> Audit log tracks barcode print quantities, timestamps, and staff actions.</li>
+        </ul>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-val">CODE128</div>
+          <div class="metric-lbl">Vector SVG Barcode</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">50x25mm</div>
+          <div class="metric-lbl">Thermal Sticker Specs</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 6 of 12</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: STAFF COMMISSION SYSTEM -->
+  <div class="slide">
+    <div class="slide-bg-glow"></div>
+    <div class="slide-header">
+      <div>
+        <div class="brand-tag">User Guide 06</div>
+        <div class="slide-title">Staff Management & Product Commission System</div>
       </div>
       <div class="badge">Fixed ₹ & % Rates</div>
     </div>
     <div class="slide-body">
       <div class="feature-card">
-        <div class="feature-title">Commission Ledger & Payout Tracking</div>
+        <div class="feature-title">Staff Commission Ledgers & Payout History</div>
         <ul class="feature-list">
-          <li><strong>Product-Level Rates:</strong> Configure percentage (%) or fixed (₹) commission per product variant.</li>
-          <li><strong>Staff Management:</strong> Unique Staff IDs (ST001, ST002) with active status & joining history.</li>
-          <li><strong>Pro-rated Return Reversals:</strong> Automatically deducts commission when customers return items.</li>
-          <li><strong>Itemized Ledger & Payouts:</strong> Filter earnings by Today, Yesterday, This Week, or Custom Dates.</li>
+          <li>✔ <strong>Product-Wise Rates:</strong> Set fixed amount (₹) or percentage (%) commission per product variant.</li>
+          <li>✔ <strong>Staff Profiles:</strong> Unique Staff IDs (ST001, ST002), Mobile Number, Active Status, and Joining Date.</li>
+          <li>✔ <strong>Pro-rated Return Reversals:</strong> Automatically reverses staff commission when customer returns an item.</li>
+          <li>✔ <strong>Itemized Ledger & Payouts:</strong> Filter earnings by Today, Yesterday, This Week, or Custom Date ranges.</li>
         </ul>
       </div>
-      <div class="metric-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="metric-grid">
         <div class="metric-box">
           <div class="metric-val">Fixed / %</div>
-          <div class="metric-lbl">Flexible Commission Types</div>
+          <div class="metric-lbl">Commission Rate Types</div>
         </div>
         <div class="metric-box">
           <div class="metric-val">Auto</div>
@@ -321,32 +429,32 @@
       </div>
     </div>
     <div class="slide-footer">
-      <span>Aura Textiles POS System Architecture</span>
-      <span>Slide 4 of 6</span>
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 7 of 12</span>
     </div>
   </div>
 
-  <!-- SLIDE 5: CUSTOMER RETURNS & MULTI-PRODUCT ITEM EXCHANGE -->
+  <!-- SLIDE 8: CUSTOMER RETURNS & MULTI-ITEM EXCHANGE -->
   <div class="slide">
     <div class="slide-bg-glow"></div>
     <div class="slide-header">
       <div>
-        <div class="brand-tag">Module 04</div>
-        <div class="slide-title">Customer Returns & Multi-Product Item Exchange</div>
+        <div class="brand-tag">User Guide 07</div>
+        <div class="slide-title">Customer Sales Returns & Multi-Product Item Exchange</div>
       </div>
-      <div class="badge">Multi-Item Exchange Cart</div>
+      <div class="badge">Multi-Product Replacement Cart</div>
     </div>
     <div class="slide-body">
       <div class="feature-card">
         <div class="feature-title">Return & Replacement Engine</div>
         <ul class="feature-list">
-          <li><strong>Multi-Field Invoice Search:</strong> Search by Invoice #, Customer Name, or Phone Number.</li>
-          <li><strong>Continuous Multi-Product Selection:</strong> Search Catalog (F2) modal allows picking multiple items seamlessly.</li>
-          <li><strong>Live Net Exchange Balance:</strong> Calculates `Total Replacement - Refund Credit` (Pays Extra / Refund Balance).</li>
-          <li><strong>Automated Stock Updates:</strong> Restocks returned items (`SalesReturn`) & deducts replacement items (`ExchangeIssue`).</li>
+          <li>✔ <strong>Multi-Field Search:</strong> Find invoices by Invoice # (AURA-2026-001001), Customer Name, or Phone Number.</li>
+          <li>✔ <strong>Continuous Multi-Product Selection:</strong> Search Catalog (F2) modal allows selecting multiple dresses in one window.</li>
+          <li>✔ <strong>Live Net Exchange Balance:</strong> Calculates `Total Replacement - Refund Credit` (Pays Extra / Refund Balance).</li>
+          <li>✔ <strong>Automated Stock Adjustments:</strong> Restocks returned items (`SalesReturn`) & deducts replacement items (`ExchangeIssue`).</li>
         </ul>
       </div>
-      <div class="metric-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="metric-grid">
         <div class="metric-box">
           <div class="metric-val">5 Modes</div>
           <div class="metric-lbl">Cash, UPI, Card, Credit, Exchange</div>
@@ -358,49 +466,156 @@
       </div>
     </div>
     <div class="slide-footer">
-      <span>Aura Textiles POS System Architecture</span>
-      <span>Slide 5 of 6</span>
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 8 of 12</span>
     </div>
   </div>
 
-  <!-- SLIDE 6: WINDOWS DESKTOP EXECUTABLE SPECS -->
+  <!-- SLIDE 9: INVENTORY, PURCHASES & SUPPLIERS -->
   <div class="slide">
     <div class="slide-bg-glow"></div>
     <div class="slide-header">
       <div>
-        <div class="brand-tag">Deployment & Architecture</div>
-        <div class="slide-title">Standalone Windows Executable (.exe)</div>
+        <div class="brand-tag">User Guide 08</div>
+        <div class="slide-title">Inventory Stock, Purchases & Supplier Management</div>
+      </div>
+      <div class="badge">Vendor & Stock Control</div>
+    </div>
+    <div class="slide-body">
+      <div class="feature-card">
+        <div class="feature-title">Supplier Purchases & Stock Adjustments</div>
+        <ul class="feature-list">
+          <li>✔ <strong>Supplier Directory:</strong> Store vendor names, GSTIN, mobile numbers, and purchase order history.</li>
+          <li>✔ <strong>Purchase Entry:</strong> Record incoming stock shipments, purchase prices, and update inventory levels.</li>
+          <li>✔ <strong>Stock Audit Trail:</strong> Track every stock movement (Opening, Purchase, Sale, Sales Return, Exchange).</li>
+          <li>✔ <strong>Manual Stock Adjustments:</strong> Adjust stock for damaged, stolen, or sample dresses with notes.</li>
+        </ul>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-val">100%</div>
+          <div class="metric-lbl">Stock Audit Traceability</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">Purchases</div>
+          <div class="metric-lbl">Vendor Purchase Orders</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 9 of 12</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: EXPENSES & PROFIT REPORTING -->
+  <div class="slide">
+    <div class="slide-bg-glow"></div>
+    <div class="slide-header">
+      <div>
+        <div class="brand-tag">User Guide 09</div>
+        <div class="slide-title">Shop Expense Tracker & Financial Profit/Loss Reports</div>
+      </div>
+      <div class="badge">Expense & Profit Ledger</div>
+    </div>
+    <div class="slide-body">
+      <div class="feature-card">
+        <div class="feature-title">Shop Expenses & Net Profit Analysis</div>
+        <ul class="feature-list">
+          <li>✔ <strong>Expense Categories:</strong> Log store expenses (Shop Rent, Electricity, Staff Tea/Refreshments, Maintenance).</li>
+          <li>✔ <strong>Financial Reports:</strong> Calculate Net Profit by deducting cost price, staff commissions, & shop expenses from total revenue.</li>
+          <li>✔ <strong>GST Tax Reports:</strong> View collected GST tax summaries (CGST + SGST) for monthly tax filing.</li>
+          <li>✔ <strong>Excel / CSV Export:</strong> Export sales history, returns, expenses, and inventory data into Excel spreadsheets.</li>
+        </ul>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-val">Net Profit</div>
+          <div class="metric-lbl">Real-time Calculation</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">Excel</div>
+          <div class="metric-lbl">1-Click Data Export</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 10 of 12</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: DATABASE BACKUPS & SECURITY -->
+  <div class="slide">
+    <div class="slide-bg-glow"></div>
+    <div class="slide-header">
+      <div>
+        <div class="brand-tag">User Guide 10</div>
+        <div class="slide-title">Database Safety, 1-Click Backups & Restore</div>
+      </div>
+      <div class="badge">Zero Data Loss Guarantee</div>
+    </div>
+    <div class="slide-body">
+      <div class="feature-card">
+        <div class="feature-title">Data Protection & System Restore</div>
+        <ul class="feature-list">
+          <li>✔ <strong>1-Click Backup Creation:</strong> Creates full JSON database snapshots of products, sales, customers, & staff.</li>
+          <li>✔ <strong>1-Click Instant Restore:</strong> Restore system database state cleanly from any saved backup file.</li>
+          <li>✔ <strong>Local MongoDB Storage:</strong> Data is stored locally on shop PC, ensuring fast response without internet.</li>
+          <li>✔ <strong>Audit Logging:</strong> Logs every critical action (login, sale, return, stock edit, backup restore) for accountability.</li>
+        </ul>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-val">1-Click</div>
+          <div class="metric-lbl">JSON Backup & Restore</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">Local</div>
+          <div class="metric-lbl">Private Shop Storage</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Aura Textiles POS Client User Guide</span>
+      <span>Slide 11 of 12</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: WINDOWS DESKTOP APP (.EXE) -->
+  <div class="slide">
+    <div class="slide-bg-glow"></div>
+    <div class="slide-header">
+      <div>
+        <div class="brand-tag">Deployment & Distribution</div>
+        <div class="slide-title">Standalone Windows Executable (.exe) Application</div>
       </div>
       <div class="badge">Electron 34 + Express 5</div>
     </div>
     <div class="slide-body">
       <div class="feature-card">
-        <div class="feature-title">Binary Distribution Specs</div>
+        <div class="feature-title">Windows Desktop Installer Specifications</div>
         <ul class="feature-list">
-          <li><strong>NSIS Windows Setup Installer:</strong> `Aura Textiles POS Setup 1.0.0.exe` (84.3 MB setup installer).</li>
-          <li><strong>Standalone Portable Executable:</strong> `release/win-unpacked/Aura Textiles POS.exe` (190.5 MB instant run).</li>
-          <li><strong>Embedded Server Architecture:</strong> Auto-spawns Express API & MongoDB connection on launch.</li>
-          <li><strong>Full Offline Support:</strong> Zero external dependency required; runs completely offline on Windows POS PCs.</li>
+          <li>✔ <strong>NSIS Setup Installer (`.exe`):</strong> `Aura Textiles POS Setup 1.0.0.exe` (84.3 MB installer).</li>
+          <li>✔ <strong>Standalone Portable Executable (`.exe`):</strong> `release/win-unpacked/Aura Textiles POS.exe` (190.5 MB instant run).</li>
+          <li>✔ <strong>Embedded Backend Server:</strong> Auto-spawns Express API & local MongoDB database connection on double-click.</li>
+          <li>✔ <strong>Full Offline Operation:</strong> Zero external internet required; runs 100% offline on store Windows PCs.</li>
         </ul>
       </div>
       <div class="metric-grid">
         <div class="metric-box">
           <div class="metric-val">84.3 MB</div>
-          <div class="metric-lbl">Installer Setup Size</div>
+          <div class="metric-lbl">Setup Installer Size</div>
         </div>
         <div class="metric-box">
           <div class="metric-val">Win 10/11</div>
           <div class="metric-lbl">OS Compatibility</div>
         </div>
-        <div class="metric-box">
-          <div class="metric-val">Offline</div>
-          <div class="metric-lbl">Local Database</div>
-        </div>
       </div>
     </div>
     <div class="slide-footer">
       <span>Aura Textiles POS System Architecture</span>
-      <span>Slide 6 of 6 — Complete Prototype Presentation</span>
+      <span>Slide 12 of 12 — Complete Client Presentation Deck</span>
     </div>
   </div>
 
