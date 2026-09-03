@@ -77,7 +77,7 @@ app.get('*', (req, res, next) => {
   const indexPath = path.join(frontendDist, 'index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
-      res.status(200).send('Dress Shop API Server is Running. Frontend dist build ready.');
+      res.status(200).send('AURA TEXTILES POS API Server is Running. Frontend dist build ready.');
     }
   });
 });
