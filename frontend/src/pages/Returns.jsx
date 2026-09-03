@@ -7,12 +7,29 @@ import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import { useSelector } from 'react-redux';
-import { RotateCcw, Search, CheckCircle, ArrowRightLeft, CreditCard, Tag, RefreshCw, User, Phone, FileText } from 'lucide-react';
+import {
+  RotateCcw,
+  Search,
+  CheckCircle,
+  ArrowRightLeft,
+  CreditCard,
+  Tag,
+  RefreshCw,
+  User,
+  Phone,
+  FileText,
+  Eye,
+  PackageCheck
+} from 'lucide-react';
 
 export const Returns = () => {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+
+  // Return & Exchange Detail Modal State
+  const [selectedReturnDetail, setSelectedReturnDetail] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Invoice Search State (Supports Invoice #, Customer Name, Phone Number)
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -186,6 +203,11 @@ export const Returns = () => {
     }
   };
 
+  const handleOpenDetailModal = (ret) => {
+    setSelectedReturnDetail(ret);
+    setShowDetailModal(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -223,11 +245,12 @@ export const Returns = () => {
               <thead className="bg-slate-50 border-b border-slate-200 uppercase text-[10px] text-slate-500 font-extrabold">
                 <tr>
                   <th className="py-3 px-4">Return #</th>
-                  <th className="py-3 px-4">Original Invoice #</th>
+                  <th className="py-3 px-4">Invoice #</th>
                   <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Processed Date</th>
-                  <th className="py-3 px-4 text-center">Return / Exchange Mode</th>
-                  <th className="py-3 px-4 text-right">Refund / Credit Value</th>
+                  <th className="py-3 px-4">Returned & Replacement Items</th>
+                  <th className="py-3 px-4 text-center">Mode</th>
+                  <th className="py-3 px-4 text-right">Value / Balance</th>
+                  <th className="py-3 px-4 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -236,7 +259,28 @@ export const Returns = () => {
                     <td className="py-3 px-4 font-mono font-extrabold text-amber-800">{ret.returnNumber}</td>
                     <td className="py-3 px-4 font-mono font-bold text-slate-900">{ret.originalInvoiceNumber}</td>
                     <td className="py-3 px-4 font-extrabold text-slate-900">{ret.customerName || 'Walk-in Customer'}</td>
-                    <td className="py-3 px-4 text-slate-500 font-semibold">{formatDateTime(ret.createdAt)}</td>
+                    
+                    {/* RETURNED & REPLACEMENT ITEMS COLUMN */}
+                    <td className="py-3 px-4 space-y-1">
+                      <div className="font-semibold text-slate-800">
+                        {ret.items?.map((i) => `${i.quantity}x ${i.productName} (${i.size}/${i.color})`).join(', ')}
+                      </div>
+                      
+                      {ret.refundMethod === 'Exchange' && (
+                        <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl space-y-0.5 text-[11px]">
+                          <div className="font-extrabold text-amber-900 flex items-center gap-1">
+                            <ArrowRightLeft className="w-3 h-3 text-amber-700" />
+                            <span>Replacement: {ret.exchangeProductName || 'Item Replacement'}</span>
+                          </div>
+                          {ret.exchangeBarcode && (
+                            <div className="text-slate-600 font-mono">
+                              Barcode: <strong className="text-slate-900">{ret.exchangeBarcode}</strong> | Price: <strong className="text-slate-900">{formatCurrency(ret.exchangeUnitPrice, symbol)}</strong>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
                     <td className="py-3 px-4 text-center font-bold">
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
@@ -253,14 +297,39 @@ export const Returns = () => {
                           ? 'Store Credit'
                           : `${ret.refundMethod} Refund`}
                       </span>
-                      {ret.exchangeProductName && (
-                        <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                          Exchanged for: {ret.exchangeProductName}
+                    </td>
+
+                    <td className="py-3 px-4 text-right">
+                      <div className="font-black text-rose-600 text-xs">
+                        {formatCurrency(ret.totalRefundAmount, symbol)}
+                      </div>
+                      {ret.refundMethod === 'Exchange' && ret.priceDifference !== undefined && (
+                        <div
+                          className={`text-[10px] font-extrabold ${
+                            ret.priceDifference > 0
+                              ? 'text-rose-600'
+                              : ret.priceDifference < 0
+                              ? 'text-emerald-600'
+                              : 'text-slate-500'
+                          }`}
+                        >
+                          {ret.priceDifference > 0
+                            ? `+${formatCurrency(ret.priceDifference, symbol)} Paid`
+                            : ret.priceDifference < 0
+                            ? `-${formatCurrency(Math.abs(ret.priceDifference), symbol)} Balance`
+                            : 'Even Swap'}
                         </div>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-right font-black text-rose-600">
-                      {formatCurrency(ret.totalRefundAmount, symbol)}
+
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => handleOpenDetailModal(ret)}
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition cursor-pointer"
+                        title="View Details"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -270,7 +339,7 @@ export const Returns = () => {
         )}
       </div>
 
-      {/* Return & Exchange Modal */}
+      {/* Return & Exchange Process Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Process Customer Return / Exchange" maxWidth="max-w-2xl">
         <div className="space-y-4">
           {error && (
@@ -306,7 +375,6 @@ export const Returns = () => {
                 </div>
               </form>
 
-              {/* Multiple Matching Invoices List (when searching by customer name or phone number) */}
               {matchingSales.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-xs font-extrabold text-slate-800 flex items-center justify-between">
@@ -443,7 +511,7 @@ export const Returns = () => {
                 </div>
               </div>
 
-              {/* DIRECT ITEM EXCHANGE SECTION WITH BARCODE & PRODUCT CATALOG SEARCH MODAL */}
+              {/* DIRECT ITEM EXCHANGE SECTION */}
               {refundMethod === 'Exchange' && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
                   <div className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center justify-between">
@@ -452,7 +520,6 @@ export const Returns = () => {
                       <span>Select Replacement Item for Exchange</span>
                     </span>
 
-                    {/* REPLICA CATALOG SEARCH BUTTON (F2) */}
                     <button
                       type="button"
                       onClick={() => setShowCatalogSearchModal(true)}
@@ -485,27 +552,34 @@ export const Returns = () => {
                   )}
 
                   {exchangeItem && (
-                    <div className="p-3 bg-white border border-amber-200 rounded-xl space-y-2 text-xs">
-                      <div className="font-extrabold text-slate-900">
-                        Replacement: {exchangeItem.product.name} ({exchangeItem.variant.size}/{exchangeItem.variant.color})
+                    <div className="p-3.5 bg-white border border-amber-300 rounded-2xl space-y-2 text-xs shadow-xs">
+                      <div className="font-black text-slate-900 text-sm flex items-center gap-2">
+                        <PackageCheck className="w-4 h-4 text-amber-600" />
+                        <span>Replacement: {exchangeItem.product.name} ({exchangeItem.variant.size}/{exchangeItem.variant.color})</span>
                       </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-slate-600 font-bold pt-1 border-t border-slate-100">
+                        <div>Barcode: <strong className="text-slate-900 font-mono">{exchangeItem.variant.barcode}</strong></div>
+                        <div>Stock Remaining: <strong className="text-slate-900">{exchangeItem.variant.stock} pcs</strong></div>
+                      </div>
+
                       <div className="flex items-center justify-between border-t border-slate-100 pt-2 font-bold">
                         <span>Replacement Item Selling Price:</span>
-                        <span className="text-slate-900 font-black">{formatCurrency(exchangePrice, symbol)}</span>
+                        <span className="text-slate-900 font-black text-sm">{formatCurrency(exchangePrice, symbol)}</span>
                       </div>
                       <div className="flex items-center justify-between font-bold">
                         <span>Returned Items Refund Value:</span>
-                        <span className="text-emerald-600 font-black">{formatCurrency(totalRefund, symbol)}</span>
+                        <span className="text-emerald-600 font-black text-sm">{formatCurrency(totalRefund, symbol)}</span>
                       </div>
                       <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-sm font-black">
                         <span>Exchange Price Balance:</span>
                         <span
                           className={
                             priceDifference > 0
-                              ? 'text-rose-600'
+                              ? 'text-rose-600 font-black text-sm'
                               : priceDifference < 0
-                              ? 'text-emerald-600'
-                              : 'text-amber-800'
+                              ? 'text-emerald-600 font-black text-sm'
+                              : 'text-amber-800 font-black text-sm'
                           }
                         >
                           {priceDifference > 0
@@ -544,6 +618,107 @@ export const Returns = () => {
           )}
         </div>
       </Modal>
+
+      {/* VIEW RETURN & EXCHANGE DETAIL MODAL */}
+      {selectedReturnDetail && (
+        <Modal
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          title={`Return & Exchange Voucher — ${selectedReturnDetail.returnNumber}`}
+          maxWidth="max-w-xl"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+              <div className="font-extrabold text-slate-900">Original Invoice: {selectedReturnDetail.originalInvoiceNumber}</div>
+              <div className="text-slate-600 font-semibold">Customer: {selectedReturnDetail.customerName || 'Walk-in Customer'}</div>
+              <div className="text-slate-500 font-medium">Processed Date: {formatDateTime(selectedReturnDetail.createdAt)}</div>
+              <div className="text-slate-500 font-medium">Processed By: {selectedReturnDetail.processedByName || 'System'}</div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Returned Items List:</div>
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-extrabold border-b border-slate-200">
+                    <tr>
+                      <th className="py-2 px-3">Returned Product</th>
+                      <th className="py-2 px-3 text-center">Qty</th>
+                      <th className="py-2 px-3 text-right">Refund Price</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {selectedReturnDetail.items?.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="py-2 px-3 font-extrabold text-slate-900">
+                          {item.productName} ({item.size}/{item.color})
+                        </td>
+                        <td className="py-2 px-3 text-center font-bold">{item.quantity}</td>
+                        <td className="py-2 px-3 text-right font-bold text-rose-600">
+                          {formatCurrency(item.totalRefund, symbol)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {selectedReturnDetail.refundMethod === 'Exchange' && (
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
+                <div className="font-black text-amber-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <ArrowRightLeft className="w-4 h-4 text-amber-700" />
+                  <span>Issued Replacement Item Details</span>
+                </div>
+                <div className="p-2.5 bg-white border border-amber-200 rounded-xl space-y-1 font-semibold">
+                  <div className="font-extrabold text-slate-900 text-sm">
+                    {selectedReturnDetail.exchangeProductName || 'Item Replacement'}
+                  </div>
+                  {selectedReturnDetail.exchangeBarcode && (
+                    <div className="text-slate-600 font-mono text-xs">
+                      Barcode: <strong className="text-slate-900">{selectedReturnDetail.exchangeBarcode}</strong>
+                    </div>
+                  )}
+                  {selectedReturnDetail.exchangeUnitPrice > 0 && (
+                    <div className="text-slate-600 text-xs">
+                      Selling Price: <strong className="text-slate-900">{formatCurrency(selectedReturnDetail.exchangeUnitPrice, symbol)}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {selectedReturnDetail.priceDifference !== undefined && (
+                  <div className="flex items-center justify-between pt-1 font-black text-xs">
+                    <span>Net Exchange Balance:</span>
+                    <span
+                      className={
+                        selectedReturnDetail.priceDifference > 0
+                          ? 'text-rose-600 font-black'
+                          : selectedReturnDetail.priceDifference < 0
+                          ? 'text-emerald-600 font-black'
+                          : 'text-slate-800'
+                      }
+                    >
+                      {selectedReturnDetail.priceDifference > 0
+                        ? `Customer Paid Extra ${formatCurrency(selectedReturnDetail.priceDifference, symbol)}`
+                        : selectedReturnDetail.priceDifference < 0
+                        ? `Refund Balance to Customer ${formatCurrency(Math.abs(selectedReturnDetail.priceDifference), symbol)}`
+                        : 'Even Swap (₹0 Balance)'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* CATALOG SEARCH REPLICA MODAL FOR ITEM EXCHANGE */}
       <ProductSearchModal
