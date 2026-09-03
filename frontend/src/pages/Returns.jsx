@@ -589,33 +589,12 @@ export const Returns = () => {
                     <button
                       type="button"
                       onClick={() => setShowCatalogSearchModal(true)}
-                      className="px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow-md shadow-amber-500/20 cursor-pointer"
                     >
-                      <Search className="w-3.5 h-3.5 text-amber-700" />
-                      <span>Search Catalog (F2)</span>
+                      <Search className="w-4 h-4 text-slate-950" />
+                      <span>Search & Add Products (F2)</span>
                     </button>
                   </div>
-
-                  <form onSubmit={handleLookupExchangeBarcode} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={exchangeBarcode}
-                      onChange={(e) => setExchangeBarcode(e.target.value)}
-                      placeholder="Scan or type barcode of replacement item to add to exchange cart (e.g. 100002)"
-                      className="flex-1 px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs"
-                    />
-                    <button
-                      type="submit"
-                      disabled={searchingExchange}
-                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-xs cursor-pointer"
-                    >
-                      {searchingExchange ? 'Adding...' : '+ Add Item'}
-                    </button>
-                  </form>
-
-                  {exchangeError && (
-                    <div className="text-xs font-bold text-rose-600">{exchangeError}</div>
-                  )}
 
                   {/* MULTI-ITEM EXCHANGE REPLACEMENT CART TABLE */}
                   {exchangeCartItems.length > 0 ? (
@@ -711,7 +690,7 @@ export const Returns = () => {
                     </div>
                   ) : (
                     <div className="py-6 text-center text-amber-800 text-xs font-semibold bg-white border border-dashed border-amber-300 rounded-xl">
-                      No replacement items added yet. Scan a barcode above or click "Search Catalog (F2)" to add products to the exchange bill.
+                      No replacement items added yet. Click "Search & Add Products (F2)" above to select replacement products for the exchange bill.
                     </div>
                   )}
                 </div>
