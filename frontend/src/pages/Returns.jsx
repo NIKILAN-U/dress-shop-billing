@@ -19,7 +19,11 @@ import {
   Phone,
   FileText,
   Eye,
-  PackageCheck
+  PackageCheck,
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingCart
 } from 'lucide-react';
 
 export const Returns = () => {
@@ -40,9 +44,9 @@ export const Returns = () => {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
-  // Exchange Replacement Product Lookup & Catalog Search Modal State
+  // Multi-Item Exchange Cart State
   const [exchangeBarcode, setExchangeBarcode] = useState('');
-  const [exchangeItem, setExchangeItem] = useState(null); // { product, variant }
+  const [exchangeCartItems, setExchangeCartItems] = useState([]); // [{ product, variantBarcode, productName, size, color, quantity, unitPrice, stock }]
   const [exchangeError, setExchangeError] = useState('');
   const [searchingExchange, setSearchingExchange] = useState(false);
   const [showCatalogSearchModal, setShowCatalogSearchModal] = useState(false);
@@ -106,7 +110,34 @@ export const Returns = () => {
     });
   };
 
-  // Direct Barcode Lookup for Exchange Replacement
+  // Add item to Exchange Cart
+  const addVariantToExchangeCart = (product, variant) => {
+    setExchangeError('');
+    setExchangeCartItems((prevItems) => {
+      const existingIdx = prevItems.findIndex((i) => i.variantBarcode === variant.barcode);
+      if (existingIdx > -1) {
+        const updated = [...prevItems];
+        updated[existingIdx].quantity += 1;
+        return updated;
+      } else {
+        return [
+          ...prevItems,
+          {
+            product: product._id,
+            variantBarcode: variant.barcode,
+            productName: product.name,
+            size: variant.size,
+            color: variant.color,
+            quantity: 1,
+            unitPrice: product.sellingPrice,
+            stock: variant.stock
+          }
+        ];
+      }
+    });
+  };
+
+  // Direct Barcode Lookup to add to Exchange Cart
   const handleLookupExchangeBarcode = async (e) => {
     if (e) e.preventDefault();
     if (!exchangeBarcode.trim()) return;
@@ -115,10 +146,8 @@ export const Returns = () => {
     try {
       const res = await getProductByBarcode(exchangeBarcode.trim());
       if (res.product && res.variant) {
-        setExchangeItem({
-          product: res.product,
-          variant: res.variant
-        });
+        addVariantToExchangeCart(res.product, res.variant);
+        setExchangeBarcode('');
       } else {
         setExchangeError('No product variant found matching barcode');
       }
@@ -131,10 +160,28 @@ export const Returns = () => {
 
   // Select Replacement Product Variant from Product Catalog Search Replica Modal
   const handleSelectExchangeVariant = (product, variant) => {
-    setExchangeItem({ product, variant });
-    setExchangeBarcode(variant.barcode);
+    addVariantToExchangeCart(product, variant);
     setExchangeError('');
     setShowCatalogSearchModal(false);
+  };
+
+  // Quantity control in Exchange Cart
+  const updateExchangeCartQty = (barcode, delta) => {
+    setExchangeCartItems((prevItems) =>
+      prevItems
+        .map((item) => {
+          if (item.variantBarcode === barcode) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean)
+    );
+  };
+
+  const removeExchangeCartItem = (barcode) => {
+    setExchangeCartItems((prevItems) => prevItems.filter((i) => i.variantBarcode !== barcode));
   };
 
   // Calculate current total refund amount from selected return item quantities
@@ -148,9 +195,14 @@ export const Returns = () => {
     return total;
   };
 
+  // Calculate total exchange cart amount
+  const calculateTotalExchange = () => {
+    return exchangeCartItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  };
+
   const totalRefund = calculateTotalRefund();
-  const exchangePrice = exchangeItem ? exchangeItem.product.sellingPrice : 0;
-  const priceDifference = exchangePrice - totalRefund;
+  const totalExchange = calculateTotalExchange();
+  const priceDifference = totalExchange - totalRefund;
 
   const handleProcessReturn = async () => {
     if (!foundSale) return;
@@ -174,8 +226,8 @@ export const Returns = () => {
       return;
     }
 
-    if (refundMethod === 'Exchange' && !exchangeItem) {
-      setError('Please scan a barcode or click "Search Catalog" to select a replacement item');
+    if (refundMethod === 'Exchange' && exchangeCartItems.length === 0) {
+      setError('Please add at least 1 replacement item to the exchange bill');
       return;
     }
 
@@ -187,12 +239,26 @@ export const Returns = () => {
         reason
       };
 
-      if (refundMethod === 'Exchange' && exchangeItem) {
-        payload.exchangeProductId = exchangeItem.product._id;
-        payload.exchangeBarcode = exchangeItem.variant.barcode;
-        payload.exchangeProductName = `${exchangeItem.product.name} (${exchangeItem.variant.size}/${exchangeItem.variant.color})`;
-        payload.exchangeUnitPrice = exchangeItem.product.sellingPrice;
+      if (refundMethod === 'Exchange' && exchangeCartItems.length > 0) {
+        payload.exchangeItems = exchangeCartItems.map((i) => ({
+          product: i.product,
+          variantBarcode: i.variantBarcode,
+          productName: i.productName,
+          size: i.size,
+          color: i.color,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          totalAmount: i.unitPrice * i.quantity
+        }));
+        payload.totalExchangeAmount = totalExchange;
         payload.priceDifference = priceDifference;
+
+        // Backward compatibility single-item fields
+        payload.exchangeBarcode = exchangeCartItems.map((i) => i.variantBarcode).join(', ');
+        payload.exchangeProductName = exchangeCartItems
+          .map((i) => `${i.quantity}x ${i.productName} (${i.size}/${i.color})`)
+          .join(', ');
+        payload.exchangeUnitPrice = totalExchange;
       }
 
       await createReturn(payload);
@@ -216,7 +282,7 @@ export const Returns = () => {
             <RotateCcw className="w-6 h-6 text-amber-600" />
             <span>Customer Sales Returns & Item Exchanges</span>
           </h1>
-          <p className="text-xs text-slate-500 font-medium">Process refunds, item exchanges & auto-restock inventory</p>
+          <p className="text-xs text-slate-500 font-medium">Process refunds, multi-item exchanges & auto-restock inventory</p>
         </div>
 
         <button
@@ -224,7 +290,7 @@ export const Returns = () => {
             setFoundSale(null);
             setMatchingSales([]);
             setInvoiceSearch('');
-            setExchangeItem(null);
+            setExchangeCartItems([]);
             setExchangeBarcode('');
             setError('');
             setShowModal(true);
@@ -259,24 +325,25 @@ export const Returns = () => {
                     <td className="py-3 px-4 font-mono font-extrabold text-amber-800">{ret.returnNumber}</td>
                     <td className="py-3 px-4 font-mono font-bold text-slate-900">{ret.originalInvoiceNumber}</td>
                     <td className="py-3 px-4 font-extrabold text-slate-900">{ret.customerName || 'Walk-in Customer'}</td>
-                    
+
                     {/* RETURNED & REPLACEMENT ITEMS COLUMN */}
                     <td className="py-3 px-4 space-y-1">
                       <div className="font-semibold text-slate-800">
                         {ret.items?.map((i) => `${i.quantity}x ${i.productName} (${i.size}/${i.color})`).join(', ')}
                       </div>
-                      
+
                       {ret.refundMethod === 'Exchange' && (
                         <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl space-y-0.5 text-[11px]">
                           <div className="font-extrabold text-amber-900 flex items-center gap-1">
-                            <ArrowRightLeft className="w-3 h-3 text-amber-700" />
-                            <span>Replacement: {ret.exchangeProductName || 'Item Replacement'}</span>
+                            <ArrowRightLeft className="w-3.5 h-3.5 text-amber-700" />
+                            <span>
+                              {ret.exchangeItems && ret.exchangeItems.length > 0
+                                ? ret.exchangeItems
+                                    .map((ex) => `${ex.quantity}x ${ex.productName} (${ex.size}/${ex.color})`)
+                                    .join(', ')
+                                : ret.exchangeProductName || 'Item Replacement'}
+                            </span>
                           </div>
-                          {ret.exchangeBarcode && (
-                            <div className="text-slate-600 font-mono">
-                              Barcode: <strong className="text-slate-900">{ret.exchangeBarcode}</strong> | Price: <strong className="text-slate-900">{formatCurrency(ret.exchangeUnitPrice, symbol)}</strong>
-                            </div>
-                          )}
                         </div>
                       )}
                     </td>
@@ -340,7 +407,7 @@ export const Returns = () => {
       </div>
 
       {/* Return & Exchange Process Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Process Customer Return / Exchange" maxWidth="max-w-2xl">
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Process Customer Return / Multi-Item Exchange" maxWidth="max-w-3xl">
         <div className="space-y-4">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl">
@@ -495,7 +562,7 @@ export const Returns = () => {
                     <option value="UPI">UPI / Online Transfer</option>
                     <option value="Card">Card Refund</option>
                     <option value="StoreCredit">Store Credit / Exchange Voucher</option>
-                    <option value="Exchange">Direct Item Exchange / Replacement</option>
+                    <option value="Exchange">Direct Item Exchange / Multi-Product Replacement</option>
                   </select>
                 </div>
 
@@ -511,13 +578,13 @@ export const Returns = () => {
                 </div>
               </div>
 
-              {/* DIRECT ITEM EXCHANGE SECTION */}
+              {/* MULTI-ITEM EXCHANGE REPLACEMENT BILL CART SECTION */}
               {refundMethod === 'Exchange' && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
                   <div className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <ArrowRightLeft className="w-4 h-4 text-amber-700" />
-                      <span>Select Replacement Item for Exchange</span>
+                      <ShoppingCart className="w-4 h-4 text-amber-700" />
+                      <span>Select Replacement Products for Exchange ({exchangeCartItems.length} items)</span>
                     </span>
 
                     <button
@@ -535,15 +602,15 @@ export const Returns = () => {
                       type="text"
                       value={exchangeBarcode}
                       onChange={(e) => setExchangeBarcode(e.target.value)}
-                      placeholder="Scan or type barcode of replacement item (e.g. 300001)"
+                      placeholder="Scan or type barcode of replacement item to add to exchange cart (e.g. 100002)"
                       className="flex-1 px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs"
                     />
                     <button
                       type="submit"
                       disabled={searchingExchange}
-                      className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-xs"
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-xs cursor-pointer"
                     >
-                      {searchingExchange ? 'Searching...' : 'Scan / Lookup'}
+                      {searchingExchange ? 'Adding...' : '+ Add Item'}
                     </button>
                   </form>
 
@@ -551,44 +618,101 @@ export const Returns = () => {
                     <div className="text-xs font-bold text-rose-600">{exchangeError}</div>
                   )}
 
-                  {exchangeItem && (
-                    <div className="p-3.5 bg-white border border-amber-300 rounded-2xl space-y-2 text-xs shadow-xs">
-                      <div className="font-black text-slate-900 text-sm flex items-center gap-2">
-                        <PackageCheck className="w-4 h-4 text-amber-600" />
-                        <span>Replacement: {exchangeItem.product.name} ({exchangeItem.variant.size}/{exchangeItem.variant.color})</span>
+                  {/* MULTI-ITEM EXCHANGE REPLACEMENT CART TABLE */}
+                  {exchangeCartItems.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="border border-amber-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-amber-100/60 text-amber-950 uppercase text-[10px] font-extrabold border-b border-amber-200">
+                            <tr>
+                              <th className="py-2.5 px-3">Replacement Item</th>
+                              <th className="py-2.5 px-3 text-center">Unit Price</th>
+                              <th className="py-2.5 px-3 text-center">Qty</th>
+                              <th className="py-2.5 px-3 text-right">Subtotal</th>
+                              <th className="py-2.5 px-3 text-center">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {exchangeCartItems.map((item) => (
+                              <tr key={item.variantBarcode} className="hover:bg-slate-50">
+                                <td className="py-2.5 px-3 font-extrabold text-slate-900">
+                                  {item.productName} ({item.size}/{item.color})
+                                  <div className="text-[10px] text-slate-500 font-mono">Barcode: {item.variantBarcode}</div>
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-bold text-slate-800">
+                                  {formatCurrency(item.unitPrice, symbol)}
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <div className="inline-flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
+                                    <button
+                                      type="button"
+                                      onClick={() => updateExchangeCartQty(item.variantBarcode, -1)}
+                                      className="p-1 hover:bg-slate-200 rounded text-slate-700 cursor-pointer"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <span className="w-6 text-center font-black text-slate-900 text-xs">{item.quantity}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateExchangeCartQty(item.variantBarcode, 1)}
+                                      className="p-1 hover:bg-slate-200 rounded text-slate-700 cursor-pointer"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-black text-slate-900">
+                                  {formatCurrency(item.unitPrice * item.quantity, symbol)}
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeExchangeCartItem(item.variantBarcode)}
+                                    className="p-1 text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer"
+                                    title="Remove Item"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-slate-600 font-bold pt-1 border-t border-slate-100">
-                        <div>Barcode: <strong className="text-slate-900 font-mono">{exchangeItem.variant.barcode}</strong></div>
-                        <div>Stock Remaining: <strong className="text-slate-900">{exchangeItem.variant.stock} pcs</strong></div>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-slate-100 pt-2 font-bold">
-                        <span>Replacement Item Selling Price:</span>
-                        <span className="text-slate-900 font-black text-sm">{formatCurrency(exchangePrice, symbol)}</span>
-                      </div>
-                      <div className="flex items-center justify-between font-bold">
-                        <span>Returned Items Refund Value:</span>
-                        <span className="text-emerald-600 font-black text-sm">{formatCurrency(totalRefund, symbol)}</span>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-sm font-black">
-                        <span>Exchange Price Balance:</span>
-                        <span
-                          className={
-                            priceDifference > 0
-                              ? 'text-rose-600 font-black text-sm'
+                      {/* EXCHANGE BALANCE SUMMARY BOX */}
+                      <div className="p-3 bg-white border border-amber-300 rounded-xl space-y-2 text-xs">
+                        <div className="flex items-center justify-between font-bold">
+                          <span>Total Replacement Products Bill ({exchangeCartItems.reduce((acc, i) => acc + i.quantity, 0)} pcs):</span>
+                          <span className="text-slate-900 font-black text-sm">{formatCurrency(totalExchange, symbol)}</span>
+                        </div>
+                        <div className="flex items-center justify-between font-bold">
+                          <span>Returned Items Refund Credit Value:</span>
+                          <span className="text-emerald-600 font-black text-sm">{formatCurrency(totalRefund, symbol)}</span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-sm font-black">
+                          <span>Net Exchange Balance:</span>
+                          <span
+                            className={
+                              priceDifference > 0
+                                ? 'text-rose-600 font-black text-sm'
+                                : priceDifference < 0
+                                ? 'text-emerald-600 font-black text-sm'
+                                : 'text-amber-800 font-black text-sm'
+                            }
+                          >
+                            {priceDifference > 0
+                              ? `Customer Pays Additional ${formatCurrency(priceDifference, symbol)}`
                               : priceDifference < 0
-                              ? 'text-emerald-600 font-black text-sm'
-                              : 'text-amber-800 font-black text-sm'
-                          }
-                        >
-                          {priceDifference > 0
-                            ? `Customer Pays Additional ${formatCurrency(priceDifference, symbol)}`
-                            : priceDifference < 0
-                            ? `Refund Balance to Customer ${formatCurrency(Math.abs(priceDifference), symbol)}`
-                            : 'Even Exchange (₹0 Difference)'}
-                        </span>
+                              ? `Refund Balance to Customer ${formatCurrency(Math.abs(priceDifference), symbol)}`
+                              : 'Even Exchange (₹0 Difference)'}
+                          </span>
+                        </div>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center text-amber-800 text-xs font-semibold bg-white border border-dashed border-amber-300 rounded-xl">
+                      No replacement items added yet. Scan a barcode above or click "Search Catalog (F2)" to add products to the exchange bill.
                     </div>
                   )}
                 </div>
@@ -610,7 +734,7 @@ export const Returns = () => {
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>
-                    {refundMethod === 'Exchange' ? 'CONFIRM ITEM EXCHANGE' : 'CONFIRM RETURN & RESTOCK'}
+                    {refundMethod === 'Exchange' ? 'CONFIRM MULTI-ITEM EXCHANGE' : 'CONFIRM RETURN & RESTOCK'}
                   </span>
                 </button>
               </div>
@@ -667,23 +791,47 @@ export const Returns = () => {
               <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
                 <div className="font-black text-amber-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                   <ArrowRightLeft className="w-4 h-4 text-amber-700" />
-                  <span>Issued Replacement Item Details</span>
+                  <span>Issued Replacement Items List</span>
                 </div>
-                <div className="p-2.5 bg-white border border-amber-200 rounded-xl space-y-1 font-semibold">
-                  <div className="font-extrabold text-slate-900 text-sm">
-                    {selectedReturnDetail.exchangeProductName || 'Item Replacement'}
+                
+                {selectedReturnDetail.exchangeItems && selectedReturnDetail.exchangeItems.length > 0 ? (
+                  <div className="border border-amber-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-amber-100/50 text-amber-900 uppercase text-[10px] font-extrabold border-b border-amber-200">
+                        <tr>
+                          <th className="py-2 px-3">Item</th>
+                          <th className="py-2 px-3 text-center">Qty</th>
+                          <th className="py-2 px-3 text-right">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedReturnDetail.exchangeItems.map((ex, i) => (
+                          <tr key={i} className="hover:bg-slate-50">
+                            <td className="py-2 px-3 font-bold text-slate-900">
+                              {ex.productName} ({ex.size}/{ex.color})
+                              <div className="text-[10px] text-slate-400 font-mono">{ex.variantBarcode}</div>
+                            </td>
+                            <td className="py-2 px-3 text-center font-bold">{ex.quantity}</td>
+                            <td className="py-2 px-3 text-right font-black text-slate-900">
+                              {formatCurrency(ex.totalAmount, symbol)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  {selectedReturnDetail.exchangeBarcode && (
-                    <div className="text-slate-600 font-mono text-xs">
-                      Barcode: <strong className="text-slate-900">{selectedReturnDetail.exchangeBarcode}</strong>
+                ) : (
+                  <div className="p-2.5 bg-white border border-amber-200 rounded-xl space-y-1 font-semibold">
+                    <div className="font-extrabold text-slate-900 text-sm">
+                      {selectedReturnDetail.exchangeProductName || 'Item Replacement'}
                     </div>
-                  )}
-                  {selectedReturnDetail.exchangeUnitPrice > 0 && (
-                    <div className="text-slate-600 text-xs">
-                      Selling Price: <strong className="text-slate-900">{formatCurrency(selectedReturnDetail.exchangeUnitPrice, symbol)}</strong>
-                    </div>
-                  )}
-                </div>
+                    {selectedReturnDetail.exchangeBarcode && (
+                      <div className="text-slate-600 font-mono text-xs">
+                        Barcode: <strong className="text-slate-900">{selectedReturnDetail.exchangeBarcode}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {selectedReturnDetail.priceDifference !== undefined && (
                   <div className="flex items-center justify-between pt-1 font-black text-xs">

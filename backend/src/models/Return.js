@@ -15,6 +15,17 @@ const returnItemSchema = new mongoose.Schema({
   reversedCommissionAmount: { type: Number, default: 0 }
 });
 
+const exchangeItemSchema = new mongoose.Schema({
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  productName: { type: String, required: true },
+  variantBarcode: { type: String, required: true },
+  size: { type: String },
+  color: { type: String },
+  quantity: { type: Number, required: true, default: 1 },
+  unitPrice: { type: Number, required: true },
+  totalAmount: { type: Number, required: true }
+});
+
 const returnSchema = new mongoose.Schema(
   {
     returnNumber: { type: String, required: true, unique: true },
@@ -29,6 +40,8 @@ const returnSchema = new mongoose.Schema(
       enum: ['Cash', 'UPI', 'Card', 'StoreCredit', 'Exchange'],
       default: 'Cash'
     },
+    exchangeItems: [exchangeItemSchema],
+    totalExchangeAmount: { type: Number, default: 0 },
     exchangeBarcode: { type: String, trim: true },
     exchangeProductName: { type: String, trim: true },
     exchangeUnitPrice: { type: Number, default: 0 },

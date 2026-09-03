@@ -27,7 +27,9 @@ export const createReturn = async (req, res) => {
       exchangeProductName,
       exchangeUnitPrice,
       priceDifference,
-      exchangeProductId
+      exchangeProductId,
+      exchangeItems,
+      totalExchangeAmount
     } = req.body;
 
     if (!saleId || !items || items.length === 0) {
@@ -115,21 +117,54 @@ export const createReturn = async (req, res) => {
       }
     }
 
-    // Deduct stock for replacement exchange item if provided
-    if (refundMethod === 'Exchange' && exchangeBarcode) {
-      try {
-        await updateVariantStock({
-          productId: exchangeProductId,
-          barcode: exchangeBarcode,
-          quantity: -1, // negative to deduct stock
-          type: 'ExchangeIssue',
-          referenceId: sale._id,
-          referenceDocNumber: returnNumber,
-          user: req.user,
-          notes: `Product Exchange issued for Return #${returnNumber}`
-        });
-      } catch (exchangeStockErr) {
-        console.warn(`[Exchange Stock Warning] Could not deduct replacement stock for barcode ${exchangeBarcode}: ${exchangeStockErr.message}`);
+    // Deduct stock for replacement exchange items if provided
+    const processedExchangeItems = [];
+    if (refundMethod === 'Exchange') {
+      if (Array.isArray(exchangeItems) && exchangeItems.length > 0) {
+        for (const exItem of exchangeItems) {
+          const itemTotal = Number(exItem.unitPrice || 0) * Number(exItem.quantity || 1);
+          processedExchangeItems.push({
+            product: exItem.product || null,
+            productName: exItem.productName,
+            variantBarcode: exItem.variantBarcode,
+            size: exItem.size || 'N/A',
+            color: exItem.color || 'N/A',
+            quantity: Number(exItem.quantity || 1),
+            unitPrice: Number(exItem.unitPrice || 0),
+            totalAmount: itemTotal
+          });
+
+          try {
+            await updateVariantStock({
+              productId: exItem.product,
+              barcode: exItem.variantBarcode,
+              quantity: -Math.abs(Number(exItem.quantity || 1)), // negative to deduct stock
+              type: 'ExchangeIssue',
+              referenceId: sale._id,
+              referenceDocNumber: returnNumber,
+              user: req.user,
+              notes: `Product Exchange issued for Return #${returnNumber}`
+            });
+          } catch (exchangeStockErr) {
+            console.warn(`[Exchange Stock Warning] Could not deduct replacement stock for barcode ${exItem.variantBarcode}: ${exchangeStockErr.message}`);
+          }
+        }
+      } else if (exchangeBarcode) {
+        // Fallback for single item exchange
+        try {
+          await updateVariantStock({
+            productId: exchangeProductId,
+            barcode: exchangeBarcode,
+            quantity: -1,
+            type: 'ExchangeIssue',
+            referenceId: sale._id,
+            referenceDocNumber: returnNumber,
+            user: req.user,
+            notes: `Product Exchange issued for Return #${returnNumber}`
+          });
+        } catch (exchangeStockErr) {
+          console.warn(`[Exchange Stock Warning] Could not deduct replacement stock for barcode ${exchangeBarcode}: ${exchangeStockErr.message}`);
+        }
       }
     }
 
@@ -142,6 +177,8 @@ export const createReturn = async (req, res) => {
       items: processedReturnItems,
       totalRefundAmount,
       refundMethod: refundMethod || 'Cash',
+      exchangeItems: processedExchangeItems,
+      totalExchangeAmount: Number(totalExchangeAmount || 0),
       exchangeBarcode: refundMethod === 'Exchange' ? exchangeBarcode : undefined,
       exchangeProductName: refundMethod === 'Exchange' ? exchangeProductName : undefined,
       exchangeUnitPrice: refundMethod === 'Exchange' ? Number(exchangeUnitPrice || 0) : undefined,

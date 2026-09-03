@@ -10,7 +10,7 @@ const stockTransactionSchema = new mongoose.Schema(
     color: { type: String, required: true },
     type: {
       type: String,
-      enum: ['Opening', 'Purchase', 'Sale', 'SalesReturn', 'PurchaseReturn', 'Adjustment'],
+      enum: ['Opening', 'Purchase', 'Sale', 'SalesReturn', 'PurchaseReturn', 'Adjustment', 'ExchangeIssue'],
       required: true
     },
     quantity: { type: Number, required: true }, // positive or negative
