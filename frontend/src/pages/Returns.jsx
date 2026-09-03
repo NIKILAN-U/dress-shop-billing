@@ -2,30 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { getReturns, createReturn } from '../services/returnService';
 import { getSales } from '../services/posService';
 import { getProductByBarcode } from '../services/productService';
+import { ProductSearchModal } from '../components/pos/ProductSearchModal';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import { useSelector } from 'react-redux';
-import { RotateCcw, Search, CheckCircle, ArrowRightLeft, CreditCard, Tag, RefreshCw } from 'lucide-react';
+import { RotateCcw, Search, CheckCircle, ArrowRightLeft, CreditCard, Tag, RefreshCw, User, Phone, FileText } from 'lucide-react';
 
 export const Returns = () => {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
-  // Return Form State
+  // Invoice Search State (Supports Invoice #, Customer Name, Phone Number)
   const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [matchingSales, setMatchingSales] = useState([]);
   const [foundSale, setFoundSale] = useState(null);
   const [returnQuantities, setReturnQuantities] = useState({});
   const [refundMethod, setRefundMethod] = useState('Cash'); // 'Cash' | 'UPI' | 'Card' | 'StoreCredit' | 'Exchange'
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
-  // Exchange Item Lookup State
+  // Exchange Replacement Product Lookup & Catalog Search Modal State
   const [exchangeBarcode, setExchangeBarcode] = useState('');
   const [exchangeItem, setExchangeItem] = useState(null); // { product, variant }
   const [exchangeError, setExchangeError] = useState('');
   const [searchingExchange, setSearchingExchange] = useState(false);
+  const [showCatalogSearchModal, setShowCatalogSearchModal] = useState(false);
 
   const { settings } = useSelector((state) => state.settings);
   const symbol = settings?.currencySymbol || '₹';
@@ -46,25 +49,36 @@ export const Returns = () => {
     }
   };
 
+  // Search invoice by Invoice Number, Customer Name, or Phone Number
   const handleSearchInvoice = async (e) => {
     e.preventDefault();
     setError('');
     setFoundSale(null);
+    setMatchingSales([]);
     try {
       const data = await getSales({ search: invoiceSearch.trim() });
-      if (data.sales && data.sales.length > 0) {
-        setFoundSale(data.sales[0]);
-        const initialQty = {};
-        data.sales[0].items.forEach((item) => {
-          initialQty[item.variantBarcode] = 0;
-        });
-        setReturnQuantities(initialQty);
+      const salesList = data.sales || [];
+
+      if (salesList.length === 1) {
+        selectSaleInvoice(salesList[0]);
+      } else if (salesList.length > 1) {
+        setMatchingSales(salesList);
       } else {
-        setError(`No invoice found matching "${invoiceSearch}"`);
+        setError(`No invoice or customer found matching "${invoiceSearch}"`);
       }
     } catch (err) {
-      setError('Error finding invoice');
+      setError('Error searching sales invoices');
     }
+  };
+
+  const selectSaleInvoice = (sale) => {
+    setFoundSale(sale);
+    setMatchingSales([]);
+    const initialQty = {};
+    sale.items.forEach((item) => {
+      initialQty[item.variantBarcode] = 0;
+    });
+    setReturnQuantities(initialQty);
   };
 
   const handleQtyChange = (barcode, val, maxVal) => {
@@ -75,9 +89,9 @@ export const Returns = () => {
     });
   };
 
-  // Lookup Replacement Exchange Product Barcode
+  // Direct Barcode Lookup for Exchange Replacement
   const handleLookupExchangeBarcode = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!exchangeBarcode.trim()) return;
     setExchangeError('');
     setSearchingExchange(true);
@@ -92,10 +106,18 @@ export const Returns = () => {
         setExchangeError('No product variant found matching barcode');
       }
     } catch (err) {
-      setExchangeError('Barcode not found in catalog');
+      setExchangeError('Barcode not found in product catalog');
     } finally {
       setSearchingExchange(false);
     }
+  };
+
+  // Select Replacement Product Variant from Product Catalog Search Replica Modal
+  const handleSelectExchangeVariant = (product, variant) => {
+    setExchangeItem({ product, variant });
+    setExchangeBarcode(variant.barcode);
+    setExchangeError('');
+    setShowCatalogSearchModal(false);
   };
 
   // Calculate current total refund amount from selected return item quantities
@@ -136,7 +158,7 @@ export const Returns = () => {
     }
 
     if (refundMethod === 'Exchange' && !exchangeItem) {
-      setError('Please scan or search a replacement item barcode for exchange');
+      setError('Please scan a barcode or click "Search Catalog" to select a replacement item');
       return;
     }
 
@@ -178,6 +200,7 @@ export const Returns = () => {
         <button
           onClick={() => {
             setFoundSale(null);
+            setMatchingSales([]);
             setInvoiceSearch('');
             setExchangeItem(null);
             setExchangeBarcode('');
@@ -247,7 +270,7 @@ export const Returns = () => {
         )}
       </div>
 
-      {/* Return Modal */}
+      {/* Return & Exchange Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Process Customer Return / Exchange" maxWidth="max-w-2xl">
         <div className="space-y-4">
           {error && (
@@ -257,30 +280,98 @@ export const Returns = () => {
           )}
 
           {!foundSale ? (
-            <form onSubmit={handleSearchInvoice} className="space-y-3">
-              <label className="block text-xs font-bold text-slate-700">Search Original Sales Invoice #</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  required
-                  value={invoiceSearch}
-                  onChange={(e) => setInvoiceSearch(e.target.value)}
-                  placeholder="e.g. AURA-2026-001001"
-                  className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-mono font-bold outline-none focus:border-amber-500 shadow-xs"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-md shadow-amber-500/20 cursor-pointer"
-                >
-                  Find Invoice
-                </button>
-              </div>
-            </form>
+            <div className="space-y-4">
+              <form onSubmit={handleSearchInvoice} className="space-y-3">
+                <label className="block text-xs font-bold text-slate-700">
+                  Search Original Sales Invoice #, Customer Name, or Phone Number
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600" />
+                    <input
+                      type="text"
+                      required
+                      value={invoiceSearch}
+                      onChange={(e) => setInvoiceSearch(e.target.value)}
+                      placeholder="e.g. AURA-2026-001001 or 9988776655 or Rajesh"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-mono font-bold outline-none focus:border-amber-500 shadow-xs"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-md shadow-amber-500/20 cursor-pointer"
+                  >
+                    Find Invoice / Customer
+                  </button>
+                </div>
+              </form>
+
+              {/* Multiple Matching Invoices List (when searching by customer name or phone number) */}
+              {matchingSales.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-extrabold text-slate-800 flex items-center justify-between">
+                    <span>Found {matchingSales.length} Matching Sales Invoices for "{invoiceSearch}":</span>
+                    <span className="text-[11px] text-slate-500 font-normal">Click an invoice to select</span>
+                  </div>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs max-h-56 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-extrabold border-b border-slate-200">
+                        <tr>
+                          <th className="py-2.5 px-3">Invoice #</th>
+                          <th className="py-2.5 px-3">Customer</th>
+                          <th className="py-2.5 px-3">Date</th>
+                          <th className="py-2.5 px-3 text-right">Total Amount</th>
+                          <th className="py-2.5 px-3 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {matchingSales.map((sale) => (
+                          <tr key={sale._id} className="hover:bg-slate-50">
+                            <td className="py-2.5 px-3 font-mono font-extrabold text-amber-800">{sale.invoiceNumber}</td>
+                            <td className="py-2.5 px-3 font-bold text-slate-900">
+                              {sale.customerName}
+                              {sale.customerMobile && (
+                                <span className="text-[11px] text-slate-400 font-medium ml-1">
+                                  ({sale.customerMobile})
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-500">{new Date(sale.createdAt).toLocaleDateString()}</td>
+                            <td className="py-2.5 px-3 text-right font-black text-slate-900">
+                              {formatCurrency(sale.grandTotal, symbol)}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <button
+                                onClick={() => selectSaleInvoice(sale)}
+                                className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-lg text-[11px] cursor-pointer"
+                              >
+                                Select Invoice
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
-                <div className="font-extrabold text-slate-900">Invoice: {foundSale.invoiceNumber}</div>
-                <div className="text-slate-600 font-semibold">Customer: {foundSale.customerName}</div>
+                <div className="font-extrabold text-slate-900 flex items-center justify-between">
+                  <span>Invoice: {foundSale.invoiceNumber}</span>
+                  <button
+                    onClick={() => {
+                      setFoundSale(null);
+                      setMatchingSales([]);
+                    }}
+                    className="text-[11px] text-amber-700 hover:underline font-bold"
+                  >
+                    Change Invoice
+                  </button>
+                </div>
+                <div className="text-slate-600 font-semibold">Customer: {foundSale.customerName} ({foundSale.customerMobile || 'N/A'})</div>
                 <div className="text-slate-500 font-medium">Purchased Date: {formatDateTime(foundSale.createdAt)}</div>
               </div>
 
@@ -352,12 +443,24 @@ export const Returns = () => {
                 </div>
               </div>
 
-              {/* DIRECT ITEM EXCHANGE SECTION */}
+              {/* DIRECT ITEM EXCHANGE SECTION WITH BARCODE & PRODUCT CATALOG SEARCH MODAL */}
               {refundMethod === 'Exchange' && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
-                  <div className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-                    <ArrowRightLeft className="w-4 h-4 text-amber-700" />
-                    <span>Select Replacement Item for Exchange</span>
+                  <div className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <ArrowRightLeft className="w-4 h-4 text-amber-700" />
+                      <span>Select Replacement Item for Exchange</span>
+                    </span>
+
+                    {/* REPLICA CATALOG SEARCH BUTTON (F2) */}
+                    <button
+                      type="button"
+                      onClick={() => setShowCatalogSearchModal(true)}
+                      className="px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                    >
+                      <Search className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Search Catalog (F2)</span>
+                    </button>
                   </div>
 
                   <form onSubmit={handleLookupExchangeBarcode} className="flex gap-2">
@@ -419,7 +522,10 @@ export const Returns = () => {
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
-                  onClick={() => setFoundSale(null)}
+                  onClick={() => {
+                    setFoundSale(null);
+                    setMatchingSales([]);
+                  }}
                   className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded-xl font-bold"
                 >
                   Back
@@ -438,6 +544,14 @@ export const Returns = () => {
           )}
         </div>
       </Modal>
+
+      {/* CATALOG SEARCH REPLICA MODAL FOR ITEM EXCHANGE */}
+      <ProductSearchModal
+        isOpen={showCatalogSearchModal}
+        onClose={() => setShowCatalogSearchModal(false)}
+        onSelectVariant={handleSelectExchangeVariant}
+        settings={settings}
+      />
     </div>
   );
 };
