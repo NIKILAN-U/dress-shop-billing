@@ -162,7 +162,6 @@ export const Returns = () => {
   const handleSelectExchangeVariant = (product, variant) => {
     addVariantToExchangeCart(product, variant);
     setExchangeError('');
-    setShowCatalogSearchModal(false);
   };
 
   // Quantity control in Exchange Cart
