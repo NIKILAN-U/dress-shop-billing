@@ -18,7 +18,8 @@ import {
   BarChart3,
   UserCheck,
   Settings,
-  Database
+  Database,
+  QrCode
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -43,6 +44,7 @@ export const Sidebar = () => {
     { label: 'Customers', path: '/customers', icon: Users, role: 'all' },
 
     { header: 'Management' },
+    { label: 'Barcode Management', path: '/barcodes', icon: QrCode, role: 'admin' },
     { label: 'Staff & Commission', path: '/staff-commission', icon: Users, role: 'admin' },
     { label: 'Expenses', path: '/expenses', icon: Receipt, role: 'admin' },
     { label: 'Reports', path: '/reports', icon: BarChart3, role: 'admin' },

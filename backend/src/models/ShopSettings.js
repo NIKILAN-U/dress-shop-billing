@@ -17,7 +17,16 @@ const shopSettingsSchema = new mongoose.Schema(
     receiptWidth: { type: String, enum: ['58mm', '80mm', 'A4'], default: '80mm' },
     lowStockThreshold: { type: Number, default: 5 },
     maxCashierDiscountPercent: { type: Number, default: 10 },
-    keyboardShortcutsEnabled: { type: Boolean, default: true }
+    keyboardShortcutsEnabled: { type: Boolean, default: true },
+    barcodeLabelWidth: { type: String, default: '50mm' },
+    barcodeLabelHeight: { type: String, default: '25mm' },
+    barcodeFontSize: { type: Number, default: 10 },
+    barcodeHeight: { type: Number, default: 35 },
+    barcodePrefix: { type: String, default: 'DSS' },
+    barcodeShowPrice: { type: Boolean, default: true },
+    barcodeShowProductName: { type: Boolean, default: true },
+    barcodeShowSizeColor: { type: Boolean, default: true },
+    barcodeShowShopName: { type: Boolean, default: true }
   },
   { timestamps: true }
 );

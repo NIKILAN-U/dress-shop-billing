@@ -25,6 +25,7 @@ import settingRoutes from './routes/settingRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
+import barcodeRoutes from './routes/barcodeRoutes.js';
 
 dotenv.config();
 
@@ -63,6 +64,7 @@ app.use('/api/settings', settingRoutes);
 app.use('/api/backups', backupRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/barcodes', barcodeRoutes);
 
 // Serve Frontend Static Production Assets in production
 const frontendDist = path.join(__dirname, '../../frontend/dist');
