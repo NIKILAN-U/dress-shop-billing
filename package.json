@@ -1,0 +1,62 @@
+{
+  "name": "aura-textiles-pos",
+  "version": "1.0.0",
+  "description": "Aura Textiles — POS Billing & Inventory Software Desktop Application",
+  "main": "electron/main.js",
+  "type": "module",
+  "scripts": {
+    "build:frontend": "cd frontend && npm run build",
+    "start": "node backend/src/server.js",
+    "electron:dev": "electron .",
+    "dist": "npm run build:frontend && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.auratextiles.pos",
+    "productName": "Aura Textiles POS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "backend/**/*",
+      "frontend/dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Aura Textiles POS"
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.4",
+    "morgan": "^1.12.0"
+  }
+}

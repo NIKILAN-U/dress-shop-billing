@@ -24,7 +24,15 @@ const returnSchema = new mongoose.Schema(
     customerName: { type: String },
     items: [returnItemSchema],
     totalRefundAmount: { type: Number, required: true },
-    refundMethod: { type: String, enum: ['Cash', 'UPI', 'StoreCredit'], default: 'Cash' },
+    refundMethod: {
+      type: String,
+      enum: ['Cash', 'UPI', 'Card', 'StoreCredit', 'Exchange'],
+      default: 'Cash'
+    },
+    exchangeBarcode: { type: String, trim: true },
+    exchangeProductName: { type: String, trim: true },
+    exchangeUnitPrice: { type: Number, default: 0 },
+    priceDifference: { type: Number, default: 0 },
     reason: { type: String, trim: true },
     processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     processedByName: { type: String }

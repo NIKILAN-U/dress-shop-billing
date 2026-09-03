@@ -18,7 +18,17 @@ export const getReturns = async (req, res) => {
 
 export const createReturn = async (req, res) => {
   try {
-    const { saleId, items, refundMethod, reason } = req.body;
+    const {
+      saleId,
+      items,
+      refundMethod,
+      reason,
+      exchangeBarcode,
+      exchangeProductName,
+      exchangeUnitPrice,
+      priceDifference,
+      exchangeProductId
+    } = req.body;
 
     if (!saleId || !items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Sale invoice ID and return items are required' });
@@ -101,6 +111,20 @@ export const createReturn = async (req, res) => {
       });
     }
 
+    // Deduct stock for replacement exchange item if provided
+    if (refundMethod === 'Exchange' && exchangeProductId && exchangeBarcode) {
+      await updateVariantStock({
+        productId: exchangeProductId,
+        barcode: exchangeBarcode,
+        quantity: -1, // negative to deduct stock
+        type: 'ExchangeIssue',
+        referenceId: sale._id,
+        referenceDocNumber: returnNumber,
+        user: req.user,
+        notes: `Product Exchange issued for Return #${returnNumber}`
+      });
+    }
+
     const returnDoc = await Return.create({
       returnNumber,
       originalSale: sale._id,
@@ -110,6 +134,10 @@ export const createReturn = async (req, res) => {
       items: processedReturnItems,
       totalRefundAmount,
       refundMethod: refundMethod || 'Cash',
+      exchangeBarcode: refundMethod === 'Exchange' ? exchangeBarcode : undefined,
+      exchangeProductName: refundMethod === 'Exchange' ? exchangeProductName : undefined,
+      exchangeUnitPrice: refundMethod === 'Exchange' ? Number(exchangeUnitPrice || 0) : undefined,
+      priceDifference: refundMethod === 'Exchange' ? Number(priceDifference || 0) : undefined,
       reason,
       processedBy: req.user._id,
       processedByName: req.user.name

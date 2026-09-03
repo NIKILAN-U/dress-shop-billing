@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getReturns, createReturn } from '../services/returnService';
 import { getSales } from '../services/posService';
+import { getProductByBarcode } from '../services/productService';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import { useSelector } from 'react-redux';
-import { RotateCcw, Plus, Search, CheckCircle } from 'lucide-react';
+import { RotateCcw, Search, CheckCircle, ArrowRightLeft, CreditCard, Tag, RefreshCw } from 'lucide-react';
 
 export const Returns = () => {
   const [returns, setReturns] = useState([]);
@@ -16,9 +17,15 @@ export const Returns = () => {
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [foundSale, setFoundSale] = useState(null);
   const [returnQuantities, setReturnQuantities] = useState({});
-  const [refundMethod, setRefundMethod] = useState('Cash');
+  const [refundMethod, setRefundMethod] = useState('Cash'); // 'Cash' | 'UPI' | 'Card' | 'StoreCredit' | 'Exchange'
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+
+  // Exchange Item Lookup State
+  const [exchangeBarcode, setExchangeBarcode] = useState('');
+  const [exchangeItem, setExchangeItem] = useState(null); // { product, variant }
+  const [exchangeError, setExchangeError] = useState('');
+  const [searchingExchange, setSearchingExchange] = useState(false);
 
   const { settings } = useSelector((state) => state.settings);
   const symbol = settings?.currencySymbol || '₹';
@@ -68,6 +75,44 @@ export const Returns = () => {
     });
   };
 
+  // Lookup Replacement Exchange Product Barcode
+  const handleLookupExchangeBarcode = async (e) => {
+    e.preventDefault();
+    if (!exchangeBarcode.trim()) return;
+    setExchangeError('');
+    setSearchingExchange(true);
+    try {
+      const res = await getProductByBarcode(exchangeBarcode.trim());
+      if (res.product && res.variant) {
+        setExchangeItem({
+          product: res.product,
+          variant: res.variant
+        });
+      } else {
+        setExchangeError('No product variant found matching barcode');
+      }
+    } catch (err) {
+      setExchangeError('Barcode not found in catalog');
+    } finally {
+      setSearchingExchange(false);
+    }
+  };
+
+  // Calculate current total refund amount from selected return item quantities
+  const calculateTotalRefund = () => {
+    if (!foundSale) return 0;
+    let total = 0;
+    foundSale.items.forEach((item) => {
+      const qty = returnQuantities[item.variantBarcode] || 0;
+      total += item.unitPrice * qty;
+    });
+    return total;
+  };
+
+  const totalRefund = calculateTotalRefund();
+  const exchangePrice = exchangeItem ? exchangeItem.product.sellingPrice : 0;
+  const priceDifference = exchangePrice - totalRefund;
+
   const handleProcessReturn = async () => {
     if (!foundSale) return;
     setError('');
@@ -90,17 +135,32 @@ export const Returns = () => {
       return;
     }
 
+    if (refundMethod === 'Exchange' && !exchangeItem) {
+      setError('Please scan or search a replacement item barcode for exchange');
+      return;
+    }
+
     try {
-      await createReturn({
+      const payload = {
         saleId: foundSale._id,
         items: itemsToReturn,
         refundMethod,
         reason
-      });
+      };
+
+      if (refundMethod === 'Exchange' && exchangeItem) {
+        payload.exchangeProductId = exchangeItem.product._id;
+        payload.exchangeBarcode = exchangeItem.variant.barcode;
+        payload.exchangeProductName = `${exchangeItem.product.name} (${exchangeItem.variant.size}/${exchangeItem.variant.color})`;
+        payload.exchangeUnitPrice = exchangeItem.product.sellingPrice;
+        payload.priceDifference = priceDifference;
+      }
+
+      await createReturn(payload);
       setShowModal(false);
       fetchReturnsList();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to process return');
+      setError(err.response?.data?.message || 'Failed to process return/exchange');
     }
   };
 
@@ -108,21 +168,26 @@ export const Returns = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-wide">Customer Sales Returns</h1>
-          <p className="text-xs text-slate-500 font-medium">Process sales returns & auto-restock inventory</p>
+          <h1 className="text-xl font-extrabold text-slate-900 tracking-wide flex items-center gap-2">
+            <RotateCcw className="w-6 h-6 text-amber-600" />
+            <span>Customer Sales Returns & Item Exchanges</span>
+          </h1>
+          <p className="text-xs text-slate-500 font-medium">Process refunds, item exchanges & auto-restock inventory</p>
         </div>
 
         <button
           onClick={() => {
             setFoundSale(null);
             setInvoiceSearch('');
+            setExchangeItem(null);
+            setExchangeBarcode('');
             setError('');
             setShowModal(true);
           }}
           className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow-md shadow-amber-500/20 cursor-pointer"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>New Sales Return</span>
+          <span>New Sales Return / Exchange</span>
         </button>
       </div>
 
@@ -138,8 +203,8 @@ export const Returns = () => {
                   <th className="py-3 px-4">Original Invoice #</th>
                   <th className="py-3 px-4">Customer</th>
                   <th className="py-3 px-4">Processed Date</th>
-                  <th className="py-3 px-4">Refund Method</th>
-                  <th className="py-3 px-4 text-right">Refund Amount</th>
+                  <th className="py-3 px-4 text-center">Return / Exchange Mode</th>
+                  <th className="py-3 px-4 text-right">Refund / Credit Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -149,7 +214,28 @@ export const Returns = () => {
                     <td className="py-3 px-4 font-mono font-bold text-slate-900">{ret.originalInvoiceNumber}</td>
                     <td className="py-3 px-4 font-extrabold text-slate-900">{ret.customerName || 'Walk-in Customer'}</td>
                     <td className="py-3 px-4 text-slate-500 font-semibold">{formatDateTime(ret.createdAt)}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-700">{ret.refundMethod}</td>
+                    <td className="py-3 px-4 text-center font-bold">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                          ret.refundMethod === 'Exchange'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            : ret.refundMethod === 'StoreCredit'
+                            ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
+                            : 'bg-slate-100 text-slate-800 border border-slate-200'
+                        }`}
+                      >
+                        {ret.refundMethod === 'Exchange'
+                          ? 'Item Exchange'
+                          : ret.refundMethod === 'StoreCredit'
+                          ? 'Store Credit'
+                          : `${ret.refundMethod} Refund`}
+                      </span>
+                      {ret.exchangeProductName && (
+                        <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                          Exchanged for: {ret.exchangeProductName}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-right font-black text-rose-600">
                       {formatCurrency(ret.totalRefundAmount, symbol)}
                     </td>
@@ -162,7 +248,7 @@ export const Returns = () => {
       </div>
 
       {/* Return Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Process Customer Return" maxWidth="max-w-2xl">
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Process Customer Return / Exchange" maxWidth="max-w-2xl">
         <div className="space-y-4">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl">
@@ -237,30 +323,99 @@ export const Returns = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Mode & Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Refund Method</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Return / Exchange Option *</label>
                   <select
                     value={refundMethod}
                     onChange={(e) => setRefundMethod(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-extrabold outline-none focus:border-amber-500"
                   >
                     <option value="Cash">Cash Refund</option>
-                    <option value="UPI">UPI Transfer</option>
-                    <option value="StoreCredit">Store Credit</option>
+                    <option value="UPI">UPI / Online Transfer</option>
+                    <option value="Card">Card Refund</option>
+                    <option value="StoreCredit">Store Credit / Exchange Voucher</option>
+                    <option value="Exchange">Direct Item Exchange / Replacement</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Return Reason</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Return / Exchange Reason</label>
                   <input
                     type="text"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="Size mismatch, Defect, etc."
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
+                    placeholder="Size mismatch, color change, defect, etc."
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
+
+              {/* DIRECT ITEM EXCHANGE SECTION */}
+              {refundMethod === 'Exchange' && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
+                  <div className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                    <ArrowRightLeft className="w-4 h-4 text-amber-700" />
+                    <span>Select Replacement Item for Exchange</span>
+                  </div>
+
+                  <form onSubmit={handleLookupExchangeBarcode} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={exchangeBarcode}
+                      onChange={(e) => setExchangeBarcode(e.target.value)}
+                      placeholder="Scan or type barcode of replacement item (e.g. 300001)"
+                      className="flex-1 px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs"
+                    />
+                    <button
+                      type="submit"
+                      disabled={searchingExchange}
+                      className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-xs"
+                    >
+                      {searchingExchange ? 'Searching...' : 'Scan / Lookup'}
+                    </button>
+                  </form>
+
+                  {exchangeError && (
+                    <div className="text-xs font-bold text-rose-600">{exchangeError}</div>
+                  )}
+
+                  {exchangeItem && (
+                    <div className="p-3 bg-white border border-amber-200 rounded-xl space-y-2 text-xs">
+                      <div className="font-extrabold text-slate-900">
+                        Replacement: {exchangeItem.product.name} ({exchangeItem.variant.size}/{exchangeItem.variant.color})
+                      </div>
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-2 font-bold">
+                        <span>Replacement Item Selling Price:</span>
+                        <span className="text-slate-900 font-black">{formatCurrency(exchangePrice, symbol)}</span>
+                      </div>
+                      <div className="flex items-center justify-between font-bold">
+                        <span>Returned Items Refund Value:</span>
+                        <span className="text-emerald-600 font-black">{formatCurrency(totalRefund, symbol)}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-sm font-black">
+                        <span>Exchange Price Balance:</span>
+                        <span
+                          className={
+                            priceDifference > 0
+                              ? 'text-rose-600'
+                              : priceDifference < 0
+                              ? 'text-emerald-600'
+                              : 'text-amber-800'
+                          }
+                        >
+                          {priceDifference > 0
+                            ? `Customer Pays Additional ${formatCurrency(priceDifference, symbol)}`
+                            : priceDifference < 0
+                            ? `Refund Balance to Customer ${formatCurrency(Math.abs(priceDifference), symbol)}`
+                            : 'Even Exchange (₹0 Difference)'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -274,7 +429,9 @@ export const Returns = () => {
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  <span>CONFIRM RETURN & RESTOCK</span>
+                  <span>
+                    {refundMethod === 'Exchange' ? 'CONFIRM ITEM EXCHANGE' : 'CONFIRM RETURN & RESTOCK'}
+                  </span>
                 </button>
               </div>
             </div>
