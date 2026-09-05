@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import { useSelector } from 'react-redux';
 import { Search, Printer, Ban, Eye, FileText } from 'lucide-react';
+import { printElementSilently } from '../utils/silentPrint';
 
 export const SalesHistory = () => {
   const [sales, setSales] = useState([]);
@@ -54,7 +55,7 @@ export const SalesHistory = () => {
   const handleReprint = (sale) => {
     setPrintSale(sale);
     setTimeout(() => {
-      window.print();
+      printElementSilently('printable-receipt', settings?.receiptPrinterName);
     }, 200);
   };
 

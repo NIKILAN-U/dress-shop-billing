@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import morgan from 'morgan';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { connectDB } from './config/db.js';
+import { ensureDatabaseReady, isConnected, dbFailureReason, shutdownDatabase, isUsingBundledEngine } from './config/db.js';
+import { APP_ROOT, resolveFrontendDist } from './utils/appPaths.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
 // Route Imports
@@ -27,15 +27,25 @@ import auditRoutes from './routes/auditRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
 import barcodeRoutes from './routes/barcodeRoutes.js';
 
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// The .env lives with the backend, not at whatever directory the app was
+// launched from, so point dotenv at it explicitly.
+dotenv.config({ path: path.join(APP_ROOT, 'backend', '.env') });
 
 const app = express();
 
-// Connect Database
-connectDB();
+// Warm the connect+seed pipeline immediately at boot. This is the same
+// memoized promise every request handler awaits via ensureDatabaseReady(), so
+// a request arriving before this resolves waits on this exact in-flight work
+// rather than racing it — it does not run the work twice.
+ensureDatabaseReady()
+  .then((ready) => {
+    if (!ready) {
+      console.error('[Startup] Database unavailable — API will serve errors until MongoDB is reachable.');
+    }
+  })
+  .catch((err) => {
+    console.error('[Startup Error] Database initialization failed:', err.message);
+  });
 
 // Middleware
 app.use(cors());
@@ -45,6 +55,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
+
+// Health & Diagnostic Route
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    server: 'running',
+    database: isConnected ? 'connected' : 'disconnected',
+    databaseFailureReason: isConnected ? null : dbFailureReason,
+    mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/dress_shop'
+  });
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -67,7 +88,9 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/barcodes', barcodeRoutes);
 
 // Serve Frontend Static Production Assets in production
-const frontendDist = path.join(__dirname, '../../frontend/dist');
+const frontendDist = resolveFrontendDist();
+
+console.log('[Express Server] Serving static frontend dist from:', frontendDist);
 app.use(express.static(frontendDist));
 
 app.get('*', (req, res, next) => {
@@ -77,7 +100,7 @@ app.get('*', (req, res, next) => {
   const indexPath = path.join(frontendDist, 'index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
-      res.status(200).send('AURA TEXTILES POS API Server is Running. Frontend dist build ready.');
+      res.status(500).send(`AURA TEXTILES POS Server Error: Unable to find index.html at ${indexPath}`);
     }
   });
 });
@@ -85,7 +108,31 @@ app.get('*', (req, res, next) => {
 // Central Error Handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`[Express] Server running in ${process.env.NODE_ENV || 'development'} mode on http://localhost:${PORT}`);
-});
+const PORT = Number(process.env.PORT) || 5000;
+
+// Electron scans SERVER_PORTS in electron/main.cjs to find us; never walk past
+// the end of that range or the desktop window will not locate the backend.
+const LAST_PORT = PORT + 4;
+
+const startServerOnPort = (p) => {
+  const server = app.listen(p, '127.0.0.1', () => {
+    console.log(`[Express] Server running in ${process.env.NODE_ENV || 'development'} mode on http://127.0.0.1:${p}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && p < LAST_PORT) {
+      console.warn(`[Express Warning] Port ${p} in use, trying port ${p + 1}...`);
+      startServerOnPort(p + 1);
+    } else {
+      console.error(`[Express Error] Could not start server: ${err.message}`);
+    }
+  });
+};
+
+startServerOnPort(PORT);
+
+// Exposed for electron/main.cjs, which loads this whole module via
+// require(serverPath) — these let it cleanly stop the bundled database
+// engine (e.g. before relocating its data folder) without reaching into
+// backend internals directly.
+export { shutdownDatabase, isUsingBundledEngine };

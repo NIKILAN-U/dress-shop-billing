@@ -1,27 +1,26 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import { logAudit } from '../middleware/auditLogger.js';
+import { BACKUP_DIR, ensureDir } from '../utils/appPaths.js';
+import { ShopSettings } from '../models/ShopSettings.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const BACKUP_DIR = path.resolve(__dirname, '../../../backups');
-
-const ensureBackupDir = () => {
-  if (!fs.existsSync(BACKUP_DIR)) {
-    fs.mkdirSync(BACKUP_DIR, { recursive: true });
-  }
+// Resolved per-request (not a static import) so changing the backup folder
+// in Settings takes effect on the very next backup — no app restart needed,
+// unlike the main database folder which is bound to a spawned mongod process.
+const getActiveBackupDir = async () => {
+  const settings = await ShopSettings.findOne();
+  const chosen = settings?.backupFolderPath?.trim();
+  return chosen ? ensureDir(chosen) : ensureDir(BACKUP_DIR);
 };
 
 export const listBackups = async (req, res) => {
   try {
-    ensureBackupDir();
-    const files = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith('.json'));
+    const backupDir = await getActiveBackupDir();
+    const files = fs.readdirSync(backupDir).filter((f) => f.endsWith('.json'));
 
     const backups = files.map((file) => {
-      const filePath = path.join(BACKUP_DIR, file);
+      const filePath = path.join(backupDir, file);
       const stats = fs.statSync(filePath);
       return {
         filename: file,
@@ -30,7 +29,7 @@ export const listBackups = async (req, res) => {
       };
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    res.json({ success: true, backups });
+    res.json({ success: true, backups, backupDir });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -38,7 +37,7 @@ export const listBackups = async (req, res) => {
 
 export const createBackup = async (req, res) => {
   try {
-    ensureBackupDir();
+    const backupDir = await getActiveBackupDir();
     const collections = await mongoose.connection.db.collections();
     const backupData = {};
 
@@ -50,7 +49,7 @@ export const createBackup = async (req, res) => {
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `backup-${timestamp}.json`;
-    const filePath = path.join(BACKUP_DIR, filename);
+    const filePath = path.join(backupDir, filename);
 
     fs.writeFileSync(filePath, JSON.stringify(backupData, null, 2), 'utf-8');
 
@@ -58,7 +57,7 @@ export const createBackup = async (req, res) => {
       user: req.user,
       action: 'CREATE_BACKUP',
       module: 'BACKUP',
-      details: `Created database snapshot backup file "${filename}"`,
+      details: `Created database snapshot backup file "${filename}" in ${backupDir}`,
       req
     });
 
@@ -79,8 +78,8 @@ export const restoreBackup = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Backup filename is required' });
     }
 
-    ensureBackupDir();
-    const filePath = path.join(BACKUP_DIR, filename);
+    const backupDir = await getActiveBackupDir();
+    const filePath = path.join(backupDir, filename);
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, message: 'Backup file does not exist' });
     }

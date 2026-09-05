@@ -24,12 +24,22 @@ export const Settings = () => {
     enableGst: true,
     defaultGstRate: 5,
     receiptWidth: '80mm',
+    receiptPrinterName: '',
+    labelPrinterName: '',
     lowStockThreshold: 5,
     maxCashierDiscountPercent: 10
   });
 
+  // Windows-installed printers, so the receipt printer (e.g. TVS RP 3200
+  // Lite) and label printer (e.g. TVS LP 46 Lite) can each be targeted by
+  // name instead of both fighting over one OS "default" printer.
+  const [availablePrinters, setAvailablePrinters] = useState([]);
+
   useEffect(() => {
     fetchSettingsData();
+    if (window.electronAPI?.getPrinters) {
+      window.electronAPI.getPrinters().then((list) => setAvailablePrinters(list || []));
+    }
   }, []);
 
   const fetchSettingsData = async () => {
@@ -196,6 +206,39 @@ export const Settings = () => {
                 onChange={(e) => setFormData({ ...formData, currencySymbol: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs outline-none font-bold"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Receipt Printer (e.g. TVS RP 3200 Lite)</label>
+              <select
+                value={formData.receiptPrinterName || ''}
+                onChange={(e) => setFormData({ ...formData, receiptPrinterName: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none"
+              >
+                <option value="">Use OS Default Printer</option>
+                {availablePrinters.map((p) => (
+                  <option key={p.name} value={p.name}>{p.displayName || p.name}</option>
+                ))}
+              </select>
+              {availablePrinters.length === 0 && (
+                <p className="text-[10px] text-slate-400 mt-1">No printers detected — will use whatever Windows prints to by default.</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Barcode Label Printer (e.g. TVS LP 46 Lite)</label>
+              <select
+                value={formData.labelPrinterName || ''}
+                onChange={(e) => setFormData({ ...formData, labelPrinterName: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none"
+              >
+                <option value="">Use OS Default Printer</option>
+                {availablePrinters.map((p) => (
+                  <option key={p.name} value={p.name}>{p.displayName || p.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

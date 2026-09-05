@@ -15,6 +15,14 @@ export const getBarcodeCatalog = async (params = {}) => {
   return response.data;
 };
 
+export const getNextBarcodes = async (count = 1) => {
+  const response = await axios.get(`${API_URL}/next`, {
+    ...getAuthHeaders(),
+    params: { count }
+  });
+  return response.data;
+};
+
 export const generateVariantBarcode = async (data) => {
   const response = await axios.post(`${API_URL}/generate`, data, getAuthHeaders());
   return response.data;

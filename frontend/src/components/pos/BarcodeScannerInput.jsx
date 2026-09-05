@@ -1,10 +1,13 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
 import { Barcode, Search } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
-export const BarcodeScannerInput = ({ onBarcodeScan, onOpenSearch }) => {
+export const BarcodeScannerInput = forwardRef(({ onBarcodeScan, onOpenSearch }, ref) => {
   const [inputVal, setInputVal] = useState('');
   const inputRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus()
+  }));
 
   useEffect(() => {
     if (inputRef.current) {
@@ -49,4 +52,4 @@ export const BarcodeScannerInput = ({ onBarcodeScan, onOpenSearch }) => {
       </button>
     </div>
   );
-};
+});

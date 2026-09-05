@@ -4,6 +4,7 @@ import { ShopSettings } from '../models/ShopSettings.js';
 import { updateVariantStock } from '../services/stockService.js';
 import { generateNextInvoiceNumber } from '../services/invoiceNumberService.js';
 import { logAudit } from '../middleware/auditLogger.js';
+import { resolveCommissionTerms, calculateCommission } from '../utils/commission.js';
 
 export const getSales = async (req, res) => {
   try {
@@ -139,18 +140,11 @@ export const createSale = async (req, res) => {
           quantity: item.quantity
         });
 
-        let commType = item.commissionType || product.commissionType || 'Percentage';
-        let commVal = item.commissionValue !== undefined ? item.commissionValue : (product.commissionValue || 0);
-        let commAmount = 0;
-
-        if (item.staff) {
-          if (commType === 'Percentage') {
-            commAmount = (item.totalAmount * commVal) / 100;
-          } else if (commType === 'Fixed') {
-            commAmount = commVal * item.quantity;
-          }
-        }
-        commAmount = Math.round(commAmount * 100) / 100;
+        const { commissionType: commType, commissionValue: commVal } =
+          resolveCommissionTerms(item, product);
+        const commAmount = item.staff
+          ? calculateCommission(item.totalAmount, { commissionType: commType, commissionValue: commVal })
+          : 0;
 
         processedItems.push({
           product: product._id,

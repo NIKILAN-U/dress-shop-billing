@@ -2,6 +2,7 @@ import { Staff } from '../models/Staff.js';
 import { CommissionPayment } from '../models/CommissionPayment.js';
 import { Sale } from '../models/Sale.js';
 import { Return } from '../models/Return.js';
+import { commissionForStoredItem } from '../utils/commission.js';
 
 // Helper for date filter ranges
 const getDateRange = (filter, customStart, customEnd) => {
@@ -182,7 +183,8 @@ export const getCommissionSummary = async (req, res) => {
           if (summaryMap[sKey]) {
             summaryMap[sKey].totalProductsSold += item.quantity || 0;
             summaryMap[sKey].totalSalesAmount += item.totalAmount || 0;
-            summaryMap[sKey].totalCommissionEarned += item.commissionAmount || 0;
+
+            summaryMap[sKey].totalCommissionEarned += commissionForStoredItem(item).commissionAmount;
           }
         }
       });
@@ -306,6 +308,9 @@ export const getItemizedCommissionLedger = async (req, res) => {
       sale.items.forEach((item) => {
         if (item.staff) {
           if (!staffId || item.staff.toString() === staffId) {
+            const { commissionType, commissionValue, commissionAmount } =
+              commissionForStoredItem(item);
+
             itemizedList.push({
               saleId: sale._id,
               invoiceNumber: sale.invoiceNumber,
@@ -318,9 +323,9 @@ export const getItemizedCommissionLedger = async (req, res) => {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               totalAmount: item.totalAmount,
-              commissionType: item.commissionType || 'Percentage',
-              commissionValue: item.commissionValue || 0,
-              commissionAmount: item.commissionAmount || 0
+              commissionType,
+              commissionValue,
+              commissionAmount
             });
           }
         }

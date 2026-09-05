@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { logAudit } from '../middleware/auditLogger.js';
+import { ensureDatabaseReady, dbFailureReason } from '../config/db.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'dress_shop_super_secret_jwt_key_2026_local', {
@@ -14,6 +15,15 @@ export const login = async (req, res) => {
 
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Username and password are required' });
+    }
+
+    if (!(await ensureDatabaseReady())) {
+      return res.status(503).json({
+        success: false,
+        message: dbFailureReason
+          ? `Database is not connected: ${dbFailureReason}`
+          : 'Database is not connected. Please restart the application and try again.'
+      });
     }
 
     const user = await User.findOne({ username: username.toLowerCase() });

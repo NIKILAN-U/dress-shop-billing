@@ -1,7 +1,11 @@
 import React from 'react';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 
-export const ThermalReceipt = ({ sale, settings }) => {
+// The receipt's actual content, shared between the hidden print-only copy
+// (ThermalReceipt below) and the visible on-screen preview
+// (ReceiptPreviewModal) — kept as one component so the two can never drift
+// out of sync with each other.
+export const ReceiptContent = ({ sale, settings }) => {
   if (!sale) return null;
 
   const widthClass = settings?.receiptWidth === '58mm' ? 'w-[58mm]' : 'w-[80mm]';
@@ -9,7 +13,7 @@ export const ThermalReceipt = ({ sale, settings }) => {
   const isGst = sale.isGstBill !== undefined ? sale.isGstBill : settings?.enableGst;
 
   return (
-    <div id="printable-receipt" className="hidden print:block bg-white text-black font-mono text-xs p-2 mx-auto select-none">
+    <>
       <div className={`${widthClass} mx-auto leading-tight text-center border-b border-dashed border-black pb-2`}>
         <div className="font-bold text-sm uppercase">{settings?.shopName || 'ELEGANCE DRESS SHOP'}</div>
         <div>{settings?.address || 'Main Road, Tamil Nadu'}</div>
@@ -84,12 +88,6 @@ export const ThermalReceipt = ({ sale, settings }) => {
             </div>
           </>
         )}
-        {sale.roundOff !== 0 && (
-          <div className="flex justify-between text-[10px]">
-            <span>Round Off:</span>
-            <span>{sale.roundOff > 0 ? `+${sale.roundOff}` : sale.roundOff}</span>
-          </div>
-        )}
         <div className="flex justify-between font-bold text-sm border-t border-black pt-1 mt-1">
           <span>GRAND TOTAL:</span>
           <span>{formatCurrency(sale.grandTotal, currencySymbol)}</span>
@@ -104,6 +102,19 @@ export const ThermalReceipt = ({ sale, settings }) => {
         <div className="font-bold uppercase">THANK YOU FOR YOUR VISIT!</div>
         <div>Goods once sold can be returned within 7 days with invoice.</div>
       </div>
+    </>
+  );
+};
+
+// Print-only: invisible on screen, exists purely so the silent-print pipeline
+// (frontend/src/utils/silentPrint.js) has a DOM node to serialize by id. The
+// visible, on-screen confirmation the cashier actually sees is
+// ReceiptPreviewModal, a separate component built on the same ReceiptContent.
+export const ThermalReceipt = ({ sale, settings }) => {
+  if (!sale) return null;
+  return (
+    <div id="printable-receipt" className="hidden print:block bg-white text-black font-mono text-xs p-2 mx-auto select-none">
+      <ReceiptContent sale={sale} settings={settings} />
     </div>
   );
 };

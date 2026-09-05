@@ -9,7 +9,16 @@ backend/.env
 
 # Build outputs
 frontend/dist/
+backend/dist/
 dist/
+release/
+
+# Stale pre-existing build copy (not source, and its .exe exceeds GitHub's
+# 100MB per-file limit anyway)
+Aura_Textiles_POS_EXE/
+
+# Runtime database backup snapshots — actual shop data, not source code
+backups/
 
 # Logs & scratch files
 *.log

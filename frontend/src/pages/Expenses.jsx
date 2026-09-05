@@ -15,7 +15,7 @@ export const Expenses = () => {
   const [formData, setFormData] = useState({
     title: '',
     category: 'Electricity',
-    amount: 0,
+    amount: '',
     paymentMethod: 'Cash',
     description: ''
   });
@@ -45,9 +45,9 @@ export const Expenses = () => {
     e.preventDefault();
     setError('');
     try {
-      await createExpense(formData);
+      await createExpense({ ...formData, amount: Number(formData.amount) || 0 });
       setShowModal(false);
-      setFormData({ title: '', category: 'Electricity', amount: 0, paymentMethod: 'Cash', description: '' });
+      setFormData({ title: '', category: 'Electricity', amount: '', paymentMethod: 'Cash', description: '' });
       fetchList();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to record expense');
@@ -182,7 +182,8 @@ export const Expenses = () => {
                 min="0"
                 required
                 value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="0"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs outline-none font-bold"
               />
             </div>

@@ -10,7 +10,10 @@ const variantSchema = new mongoose.Schema({
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    sku: { type: String, required: true, unique: true, trim: true },
+    // Optional: sparse so any number of products can omit it without
+    // colliding on MongoDB's unique index (a non-sparse unique index would
+    // treat every product with no SKU as sharing the same "missing" value).
+    sku: { type: String, unique: true, sparse: true, trim: true },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     subcategory: { type: String, trim: true },
     brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' },
@@ -23,8 +26,8 @@ const productSchema = new mongoose.Schema(
     discountPercent: { type: Number, default: 0 },
     minStockLevel: { type: Number, default: 5 },
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
-    commissionType: { type: String, enum: ['Percentage', 'Fixed'], default: 'Percentage' },
-    commissionValue: { type: Number, default: 0, min: 0 },
+    commissionType: { type: String, enum: ['Percentage', 'Fixed'], default: 'Fixed' },
+    commissionValue: { type: Number, default: 3, min: 0 },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     variants: [variantSchema]
   },

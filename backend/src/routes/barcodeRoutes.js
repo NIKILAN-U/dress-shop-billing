@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getBarcodeCatalog,
+  getNextBarcodes,
   generateVariantBarcode,
   bulkGenerateBarcodes,
   logBarcodePrint,
@@ -13,6 +14,7 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/catalog', getBarcodeCatalog);
+router.get('/next', getNextBarcodes);
 router.post('/generate', adminOnly, generateVariantBarcode);
 router.post('/bulk-generate', adminOnly, bulkGenerateBarcodes);
 router.post('/log-print', adminOnly, logBarcodePrint);

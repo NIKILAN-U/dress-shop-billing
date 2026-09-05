@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   addToCart,
@@ -18,6 +18,7 @@ import {
 } from '../store/slices/posSlice';
 import { getProductByBarcode } from '../services/productService';
 import { createSale } from '../services/posService';
+import { printElementSilently } from '../utils/silentPrint';
 import { getStaffMembers } from '../services/staffService';
 import { BarcodeScannerInput } from '../components/pos/BarcodeScannerInput';
 import { ProductSearchModal } from '../components/pos/ProductSearchModal';
@@ -25,6 +26,7 @@ import { CustomerSelectModal } from '../components/pos/CustomerSelectModal';
 import { DiscountModal } from '../components/pos/DiscountModal';
 import { PaymentModal } from '../components/pos/PaymentModal';
 import { HoldBillsDrawer } from '../components/pos/HoldBillsDrawer';
+import { ReceiptPreviewModal } from '../components/pos/ReceiptPreviewModal';
 import { ThermalReceipt } from '../components/print/ThermalReceipt';
 import { formatCurrency } from '../utils/formatters';
 import { useTheme } from '../context/ThemeContext';
@@ -46,7 +48,8 @@ import {
   QrCode,
   FileCheck,
   FileX,
-  Edit2
+  Edit2,
+  UserCheck
 } from 'lucide-react';
 
 export const POS = () => {
@@ -63,14 +66,30 @@ export const POS = () => {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showHeldDrawer, setShowHeldDrawer] = useState(false);
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
 
   const [scanError, setScanError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeStaffList, setActiveStaffList] = useState([]);
+  const [selectedBillStaffId, setSelectedBillStaffId] = useState('');
+
+  const barcodeInputRef = useRef(null);
 
   useEffect(() => {
     fetchActiveStaff();
   }, []);
+
+  // Drop focus straight back into the scan box the instant every modal is
+  // closed — search, customer, discount, payment, held-bills, the post-sale
+  // receipt — so a cashier never has to click back in before scanning the
+  // next item. Watching them all together (rather than adding a refocus call
+  // at each individual close site) catches every way a modal can close:
+  // selection, Cancel, the X button, or Escape.
+  useEffect(() => {
+    if (!showSearchModal && !showCustomerModal && !showDiscountModal && !showPaymentModal && !showHeldDrawer && !showReceiptPreview) {
+      barcodeInputRef.current?.focus();
+    }
+  }, [showSearchModal, showCustomerModal, showDiscountModal, showPaymentModal, showHeldDrawer, showReceiptPreview]);
 
   const fetchActiveStaff = async () => {
     try {
@@ -82,6 +101,42 @@ export const POS = () => {
   };
 
   const currencySymbol = settings?.currencySymbol || '₹';
+
+  // Apply selected staff to ALL items in the entire bill
+  const handleApplyStaffToEntireBill = (staffMongoId) => {
+    setSelectedBillStaffId(staffMongoId || '');
+    const sObj = activeStaffList.find((s) => s._id === staffMongoId);
+    const sMongoId = sObj?._id || null;
+    const sStaffId = sObj?.staffId || null;
+    const sName = sObj?.name || null;
+
+    cart.forEach((i) => {
+      dispatch(
+        updateCartItemStaff({
+          barcode: i.variantBarcode,
+          staffMongoId: sMongoId,
+          staffId: sStaffId,
+          staffName: sName
+        })
+      );
+    });
+  };
+
+  const autoAssignBillStaff = (barcode) => {
+    if (selectedBillStaffId) {
+      const sObj = activeStaffList.find((s) => s._id === selectedBillStaffId);
+      if (sObj) {
+        dispatch(
+          updateCartItemStaff({
+            barcode,
+            staffMongoId: sObj._id,
+            staffId: sObj.staffId,
+            staffName: sObj.name
+          })
+        );
+      }
+    }
+  };
 
   // Handle USB Barcode scan
   const handleBarcodeScan = async (barcode) => {
@@ -96,6 +151,7 @@ export const POS = () => {
             quantity: 1
           })
         );
+        autoAssignBillStaff(res.product.selectedVariant.barcode);
       }
     } catch (err) {
       setScanError(err.response?.data?.message || `Barcode "${barcode}" not found in catalog`);
@@ -111,6 +167,7 @@ export const POS = () => {
         quantity: 1
       })
     );
+    autoAssignBillStaff(variant.barcode);
   };
 
   // Calculate Totals
@@ -140,8 +197,11 @@ export const POS = () => {
   }
 
   const rawGrandTotal = taxableAmount + taxTotal;
-  const roundOff = Math.round(rawGrandTotal) - rawGrandTotal;
-  const grandTotal = Math.round(rawGrandTotal);
+  // Rupee rounding was removed from the bill, but the total still has to be
+  // settled to paise — otherwise float drift (e.g. 1234.5600000000002) is what
+  // gets stored on the sale and shown on the receipt.
+  const roundOff = 0;
+  const grandTotal = Math.round(rawGrandTotal * 100) / 100;
 
   // Handle Payment Submit
   const handleConfirmPayment = async ({ paymentMethod, payments }) => {
@@ -174,9 +234,16 @@ export const POS = () => {
       dispatch(clearCart());
       setShowPaymentModal(false);
 
-      // Trigger thermal print automatically
+      // Show the bill on screen and keep it there — it does NOT auto-close.
+      // The cashier or admin dismisses it themselves once they've confirmed
+      // the print (or reprinted it from here), so the bill is never gone
+      // before printing was actually taken.
+      setShowReceiptPreview(true);
+
+      // Also attempt a background silent print immediately, for speed on the
+      // common case — this does not affect the preview above either way.
       setTimeout(() => {
-        window.print();
+        printElementSilently('printable-receipt', settings?.receiptPrinterName);
       }, 200);
     } catch (err) {
       setScanError(err.response?.data?.message || 'Failed to complete sale');
@@ -194,24 +261,43 @@ export const POS = () => {
     });
   };
 
-  // Keyboard Shortcuts (F1, F2, F4, F8, F9)
+  const handleHoldCart = () => {
+    if (cart.length === 0) return;
+    dispatch(holdCurrentBill());
+    barcodeInputRef.current?.focus();
+  };
+
+  // Keyboard Shortcuts. Each action responds to its F-key AND a Ctrl+Shift
+  // alias — many laptops remap bare F1-F12 to hardware functions (volume,
+  // brightness) unless "Fn Lock" is on, which silently swallows the F-key
+  // before it ever reaches the app. Ctrl+Shift combinations are not subject
+  // to that remapping, so they work as a reliable fallback on any keyboard.
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'F1') {
+      const alias = (letter) => e.ctrlKey && e.shiftKey && e.key.toLowerCase() === letter;
+
+      if (e.key === 'F1' || alias('n')) {
         e.preventDefault();
         dispatch(clearCart());
-      } else if (e.key === 'F2') {
+        barcodeInputRef.current?.focus();
+      } else if (e.key === 'F2' || alias('s')) {
         e.preventDefault();
         setShowSearchModal(true);
-      } else if (e.key === 'F4') {
+      } else if (e.key === 'F3' || alias('h')) {
+        e.preventDefault();
+        handleHoldCart();
+      } else if (e.key === 'F4' || alias('c')) {
         e.preventDefault();
         setShowCustomerModal(true);
-      } else if (e.key === 'F8') {
+      } else if (e.key === 'F8' || alias('enter')) {
         e.preventDefault();
         if (cart.length > 0) setShowPaymentModal(true);
-      } else if (e.key === 'F9') {
+      } else if (e.key === 'F9' || alias('q')) {
         e.preventDefault();
         if (cart.length > 0) handleQuickPay('Cash');
+      } else if (e.key === 'F10' || alias('u')) {
+        e.preventDefault();
+        if (cart.length > 0) handleQuickPay('UPI');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -222,6 +308,7 @@ export const POS = () => {
     <div className="h-[calc(100vh-5.5rem)] flex flex-col gap-4">
       {/* Top Barcode & Search Input */}
       <BarcodeScannerInput
+        ref={barcodeInputRef}
         onBarcodeScan={handleBarcodeScan}
         onOpenSearch={() => setShowSearchModal(true)}
       />
@@ -242,15 +329,30 @@ export const POS = () => {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
         {/* Left Side: Cart Items Table with Editable Prices & Rupee Discounts */}
         <div className="lg:col-span-2 border rounded-2xl flex flex-col overflow-hidden shadow-xs transition-colors bg-white border-slate-200">
-          <div className="px-5 py-3 border-b flex items-center justify-between border-slate-100 bg-slate-50/80">
+          <div className="px-5 py-3 border-b flex flex-wrap items-center justify-between gap-2 border-slate-100 bg-slate-50/80">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-xs uppercase tracking-wider text-slate-900">Current Cart</span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-900 font-black border border-amber-200">
                 {cart.length} ITEMS
               </span>
-              <span className="text-[11px] text-slate-500 font-semibold hidden sm:inline ml-2">
-                (Click price or discount to edit directly)
-              </span>
+            </div>
+
+            {/* BILL SALES STAFF SELECTOR (Applies staff to all items in current bill) */}
+            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl text-xs font-bold shadow-xs">
+              <UserCheck className="w-4 h-4 text-amber-700 shrink-0" />
+              <span className="text-slate-800 font-extrabold whitespace-nowrap text-[11px]">Bill Staff:</span>
+              <select
+                value={selectedBillStaffId}
+                onChange={(e) => handleApplyStaffToEntireBill(e.target.value)}
+                className="bg-white border border-amber-300 rounded-lg px-2 py-0.5 text-slate-900 font-extrabold text-xs outline-none cursor-pointer"
+              >
+                <option value="">-- Apply to Entire Bill --</option>
+                {activeStaffList.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name} ({s.staffId})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex items-center gap-2">
@@ -267,15 +369,15 @@ export const POS = () => {
               {cart.length > 0 && (
                 <>
                   <button
-                    onClick={() => dispatch(holdCurrentBill())}
+                    onClick={handleHoldCart}
                     className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                   >
                     <PauseCircle className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Hold Cart</span>
+                    <span>Hold Cart (F3)</span>
                   </button>
 
                   <button
-                    onClick={() => dispatch(clearCart())}
+                    onClick={() => { dispatch(clearCart()); barcodeInputRef.current?.focus(); }}
                     className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -345,22 +447,11 @@ export const POS = () => {
                           </div>
                         </td>
 
-                        {/* STAFF SELECTION DROPDOWN */}
+                        {/* STAFF SELECTION DROPDOWN (Selecting on any item applies to entire bill) */}
                         <td className="py-3 px-3 text-center">
                           <select
-                            value={item.staff || ''}
-                            onChange={(e) => {
-                              const sId = e.target.value;
-                              const sObj = activeStaffList.find((s) => s._id === sId);
-                              dispatch(
-                                updateCartItemStaff({
-                                  barcode: item.variantBarcode,
-                                  staffMongoId: sObj?._id || null,
-                                  staffId: sObj?.staffId || null,
-                                  staffName: sObj?.name || null
-                                })
-                              );
-                            }}
+                            value={item.staff || selectedBillStaffId || ''}
+                            onChange={(e) => handleApplyStaffToEntireBill(e.target.value)}
                             className="w-28 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs cursor-pointer"
                           >
                             <option value="">-- Select --</option>
@@ -408,7 +499,26 @@ export const POS = () => {
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="w-5 text-center font-black text-slate-900">{item.quantity}</span>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                dispatch(
+                                  updateCartItemQty({
+                                    barcode: item.variantBarcode,
+                                    // Typing is clamped to at least 1 rather than reusing the
+                                    // "0 removes the row" behaviour the -/+ buttons have — a row
+                                    // disappearing mid-edit (e.g. clearing the field to type a
+                                    // new multi-digit quantity) would make it impossible to type
+                                    // a replacement value in one motion.
+                                    quantity: Math.max(1, Number(e.target.value) || 1)
+                                  })
+                                )
+                              }
+                              onFocus={(e) => e.target.select()}
+                              className="w-11 text-center font-black text-slate-900 bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
                             <button
                               onClick={() =>
                                 dispatch(
@@ -593,12 +703,6 @@ export const POS = () => {
                 </div>
               )}
 
-              {roundOff !== 0 && (
-                <div className="flex justify-between text-slate-500 text-[11px]">
-                  <span>Round Off</span>
-                  <span>{roundOff > 0 ? `+${roundOff}` : roundOff}</span>
-                </div>
-              )}
             </div>
 
             <hr className="border-slate-200" />
@@ -698,7 +802,15 @@ export const POS = () => {
         settings={settings}
       />
 
-      {/* Hidden printable receipt for window.print() */}
+      {/* Visible bill confirmation — stays open until explicitly closed */}
+      <ReceiptPreviewModal
+        isOpen={showReceiptPreview}
+        onClose={() => setShowReceiptPreview(false)}
+        sale={lastCompletedSale}
+        settings={settings}
+      />
+
+      {/* Hidden printable receipt, serialized by the silent-print pipeline */}
       <ThermalReceipt sale={lastCompletedSale} settings={settings} />
     </div>
   );

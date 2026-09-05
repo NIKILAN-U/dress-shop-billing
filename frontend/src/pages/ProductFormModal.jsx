@@ -3,6 +3,7 @@ import { Modal } from '../components/common/Modal';
 import { createProduct, updateProduct } from '../services/productService';
 import { getCategories } from '../services/categoryService';
 import { getBrands } from '../services/brandService';
+import { getNextBarcodes } from '../services/barcodeService';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -15,60 +16,86 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Pre-fetched pool of the next unused barcodes, continuing the same
+  // sequence used across the app (barcode management, bulk-generate) — so a
+  // new product picks up right after whatever the last product's barcode
+  // was, instead of a random per-field placeholder. Popped from as variants
+  // are added; refilled with a client-side fallback only if it ever runs out.
+  const [barcodePool, setBarcodePool] = useState([]);
+  const nextBarcode = () => {
+    setBarcodePool((pool) => pool.length ? pool.slice(1) : pool);
+    return barcodePool[0] || `BAR-${Date.now().toString().slice(-6)}`;
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
     category: '',
     brand: '',
-    purchasePrice: 0,
-    sellingPrice: 0,
-    mrp: 0,
+    purchasePrice: '',
+    sellingPrice: '',
+    mrp: '',
     taxPercent: 5,
     minStockLevel: 5,
-    commissionType: 'Percentage',
-    commissionValue: 0,
+    commissionType: 'Fixed',
+    commissionValue: 3,
     variants: [
       { size: 'M', color: 'Sky Blue', barcode: '', stock: 10 }
     ]
   });
 
   useEffect(() => {
-    if (isOpen) {
-      fetchMasterData();
-      if (productData) {
-        setFormData({
-          name: productData.name,
-          sku: productData.sku,
-          category: productData.category?._id || productData.category || '',
-          brand: productData.brand?._id || productData.brand || '',
-          purchasePrice: productData.purchasePrice,
-          sellingPrice: productData.sellingPrice,
-          mrp: productData.mrp,
-          taxPercent: productData.taxPercent,
-          minStockLevel: productData.minStockLevel,
-          commissionType: productData.commissionType || 'Percentage',
-          commissionValue: productData.commissionValue || 0,
-          variants: productData.variants || []
-        });
-      } else {
-        setFormData({
-          name: '',
-          sku: '',
-          category: '',
-          brand: '',
-          purchasePrice: 0,
-          sellingPrice: 0,
-          mrp: 0,
-          taxPercent: 5,
-          minStockLevel: 5,
-          commissionType: 'Percentage',
-          commissionValue: 0,
-          variants: [
-            { size: 'M', color: 'Sky Blue', barcode: `BAR-${Date.now().toString().slice(-6)}`, stock: 10 }
-          ]
-        });
-      }
+    if (!isOpen) return;
+    fetchMasterData();
+
+    if (productData) {
+      setBarcodePool([]);
+      setFormData({
+        name: productData.name,
+        sku: productData.sku,
+        category: productData.category?._id || productData.category || '',
+        brand: productData.brand?._id || productData.brand || '',
+        purchasePrice: productData.purchasePrice,
+        sellingPrice: productData.sellingPrice,
+        mrp: productData.mrp,
+        taxPercent: productData.taxPercent,
+        minStockLevel: productData.minStockLevel,
+        commissionType: productData.commissionType || 'Fixed',
+        commissionValue: productData.commissionValue ?? 3,
+        variants: productData.variants || []
+      });
+      return;
     }
+
+    // New product: reserve a batch of the next barcodes up front (covering
+    // the first variant plus a few anticipated "Add Variant" clicks) so each
+    // one continues straight on from wherever the last product left off.
+    (async () => {
+      let pool = [];
+      try {
+        const res = await getNextBarcodes(10);
+        pool = res.barcodes || [];
+      } catch (err) {
+        console.error(err);
+      }
+      setFormData({
+        name: '',
+        sku: '',
+        category: '',
+        brand: '',
+        purchasePrice: '',
+        sellingPrice: '',
+        mrp: '',
+        taxPercent: 5,
+        minStockLevel: 5,
+        commissionType: 'Fixed',
+        commissionValue: 3,
+        variants: [
+          { size: 'M', color: 'Sky Blue', barcode: pool[0] || `BAR-${Date.now().toString().slice(-6)}`, stock: 10 }
+        ]
+      });
+      setBarcodePool(pool.slice(1));
+    })();
   }, [isOpen, productData]);
 
   const fetchMasterData = async () => {
@@ -86,7 +113,7 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
       ...formData,
       variants: [
         ...formData.variants,
-        { size: 'L', color: 'White', barcode: `BAR-${Date.now().toString().slice(-6)}`, stock: 5 }
+        { size: 'L', color: 'White', barcode: nextBarcode(), stock: 5 }
       ]
     });
   };
@@ -114,6 +141,12 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
         ...formData,
         sku: formData.sku?.trim(),
         name: formData.name?.trim(),
+        // Blank price fields display empty rather than a misleading "0" —
+        // convert back to real numbers here, defaulting to 0 only now, at
+        // the point of actually saving.
+        purchasePrice: Number(formData.purchasePrice) || 0,
+        sellingPrice: Number(formData.sellingPrice) || 0,
+        mrp: Number(formData.mrp) || 0,
         variants: formData.variants.map((v) => ({
           ...v,
           barcode: v.barcode?.trim()
@@ -171,12 +204,12 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SKU / Code *</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SKU / Code <span className="font-normal text-slate-400 normal-case">(optional)</span></label>
             <input
               type="text"
-              required
               value={formData.sku}
               onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              placeholder="Leave blank to skip"
               className={inputClass}
             />
           </div>
@@ -224,7 +257,8 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
               type="number"
               min="0"
               value={formData.purchasePrice}
-              onChange={(e) => setFormData({ ...formData, purchasePrice: Number(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+              placeholder="0"
               className={inputClass}
             />
           </div>
@@ -236,7 +270,8 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
               min="0"
               required
               value={formData.sellingPrice}
-              onChange={(e) => setFormData({ ...formData, sellingPrice: Number(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value })}
+              placeholder="0"
               className={inputClass}
             />
           </div>
@@ -247,7 +282,8 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
               type="number"
               min="0"
               value={formData.mrp}
-              onChange={(e) => setFormData({ ...formData, mrp: Number(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
+              placeholder="0"
               className={inputClass}
             />
           </div>
@@ -278,13 +314,13 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
                 className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-amber-500 shadow-xs"
               >
                 <option value="Percentage">Percentage (%) of Selling Price</option>
-                <option value="Fixed">Fixed Amount (₹) per Item</option>
+                <option value="Fixed">Fixed Rule: ₹3 per ₹1000 Sale</option>
               </select>
             </div>
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                {formData.commissionType === 'Percentage' ? 'Commission Rate (%)' : 'Commission Amount (₹)'}
+                {formData.commissionType === 'Percentage' ? 'Commission Rate (%)' : 'Commission Value (₹ per ₹1000)'}
               </label>
               <input
                 type="number"
@@ -292,7 +328,7 @@ export const ProductFormModal = ({ isOpen, onClose, productData = null, onSaved 
                 min="0"
                 value={formData.commissionValue}
                 onChange={(e) => setFormData({ ...formData, commissionValue: Number(e.target.value) })}
-                placeholder={formData.commissionType === 'Percentage' ? 'e.g. 5%' : 'e.g. ₹50'}
+                placeholder={formData.commissionType === 'Percentage' ? 'e.g. 5%' : 'e.g. 3'}
                 className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-black text-slate-900 outline-none focus:border-amber-500 shadow-xs"
               />
             </div>

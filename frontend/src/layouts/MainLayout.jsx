@@ -16,10 +16,12 @@ export const MainLayout = () => {
     dispatch(fetchSettings());
   }, [dispatch]);
 
-  // Global POS Keyboard Shortcuts listener
+  // Global POS Keyboard Shortcuts listener. Ctrl+Shift+N mirrors F1 as a
+  // fallback for keyboards where bare F-keys are remapped to hardware
+  // functions (volume/brightness) unless Fn Lock is enabled.
   useEffect(() => {
     const handleGlobalShortcuts = (e) => {
-      if (e.key === 'F1') {
+      if (e.key === 'F1' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'n')) {
         e.preventDefault();
         navigate('/pos');
       }
@@ -28,8 +30,15 @@ export const MainLayout = () => {
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, [navigate]);
 
+  // Electron's File menu "New Billing Sale" (Ctrl+N) sends this over IPC —
+  // nothing was listening for it, so the accelerator silently did nothing.
+  useEffect(() => {
+    if (!window.electronAPI?.onMenuTrigger) return;
+    window.electronAPI.onMenuTrigger('menu:new-sale', () => navigate('/pos'));
+  }, [navigate]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+    <div className="h-screen flex flex-col bg-slate-50 text-slate-900 overflow-hidden">
       <Navbar onOpenShortcuts={() => setShowShortcuts(true)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />

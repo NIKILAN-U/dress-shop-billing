@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { ShopSettings } from '../models/ShopSettings.js';
 import { logAudit } from '../middleware/auditLogger.js';
 
@@ -34,10 +35,28 @@ export const updateSettings = async (req, res) => {
       'enableGst',
       'defaultGstRate',
       'receiptWidth',
+      'receiptPrinterName',
+      'labelPrinterName',
+      'backupFolderPath',
       'lowStockThreshold',
       'maxCashierDiscountPercent',
       'keyboardShortcutsEnabled'
     ];
+
+    // A bad backup folder (typo, a drive letter that's been unplugged, no
+    // write permission) would otherwise fail silently until the next backup
+    // is attempted — check it now, while there is still a chance to say why.
+    if (req.body.backupFolderPath) {
+      try {
+        fs.mkdirSync(req.body.backupFolderPath, { recursive: true });
+        fs.accessSync(req.body.backupFolderPath, fs.constants.W_OK);
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          message: `Can't use "${req.body.backupFolderPath}" for backups: ${err.message}`
+        });
+      }
+    }
 
     const oldValue = settings.toObject();
 

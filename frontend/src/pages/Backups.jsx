@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { getBackups, createBackup, restoreBackup } from '../services/backupService';
+import { updateSettings } from '../services/settingService';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { Database, Download, RotateCcw, Check, AlertCircle } from 'lucide-react';
+import { Database, Download, RotateCcw, Check, AlertCircle, FolderOpen, FolderCog } from 'lucide-react';
 
 export const Backups = () => {
   const [backups, setBackups] = useState([]);
+  const [backupDir, setBackupDir] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [changingFolder, setChangingFolder] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -19,10 +22,36 @@ export const Backups = () => {
     try {
       const data = await getBackups();
       setBackups(data.backups || []);
+      setBackupDir(data.backupDir || '');
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangeFolder = async () => {
+    if (!window.electronAPI?.selectFolder) {
+      setError('Choosing a folder is only available in the desktop app.');
+      return;
+    }
+    const chosen = await window.electronAPI.selectFolder({
+      title: 'Choose a Folder for Database Backups',
+      message: 'Select a folder — e.g. on an external drive — where "Backup Database Now" will save its files.'
+    });
+    if (!chosen) return;
+
+    setChangingFolder(true);
+    setMessage('');
+    setError('');
+    try {
+      await updateSettings({ backupFolderPath: chosen });
+      setMessage(`Backup folder changed to ${chosen}`);
+      fetchList();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to change backup folder');
+    } finally {
+      setChangingFolder(false);
     }
   };
 
@@ -72,6 +101,24 @@ export const Backups = () => {
         >
           <Database className="w-4 h-4" />
           <span>{actionLoading ? 'Creating Backup...' : 'BACKUP DATABASE NOW'}</span>
+        </button>
+      </div>
+
+      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <FolderOpen className="w-4 h-4 text-slate-500 shrink-0" />
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Backup Folder</div>
+            <div className="text-xs font-mono font-bold text-slate-800 truncate">{backupDir || 'Loading…'}</div>
+          </div>
+        </div>
+        <button
+          onClick={handleChangeFolder}
+          disabled={changingFolder}
+          className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer"
+        >
+          <FolderCog className="w-3.5 h-3.5" />
+          <span>{changingFolder ? 'Saving…' : 'Change Folder (e.g. an external drive)'}</span>
         </button>
       </div>
 

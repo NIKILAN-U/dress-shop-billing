@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Code128Barcode } from './Code128Barcode';
 import { logBarcodePrint } from '../../services/barcodeService';
+import { printElementSilently } from '../../utils/silentPrint';
 import { formatCurrency } from '../../utils/formatters';
 import { useSelector } from 'react-redux';
 import { Printer, Package, Hash, Tag, Layers, CheckCircle2 } from 'lucide-react';
@@ -73,10 +74,10 @@ export const ThermalBarcodeLabelModal = ({
       }
 
       if (onPrinted) onPrinted();
-      window.print();
+      await printElementSilently('printable-label', settings?.labelPrinterName);
     } catch (err) {
       console.error('Failed to log print job', err);
-      window.print();
+      await printElementSilently('printable-label', settings?.labelPrinterName);
     } finally {
       setPrinting(false);
     }
@@ -261,8 +262,8 @@ export const ThermalBarcodeLabelModal = ({
         </div>
       </div>
 
-      {/* Hidden Thermal Print Sheet triggered by window.print() */}
-      <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:z-50">
+      {/* Hidden Thermal Print Sheet, serialized and printed silently via IPC */}
+      <div id="printable-label" className="hidden print:block print:fixed print:inset-0 print:bg-white print:z-50">
         <style>{`
           @media print {
             body * { visibility: hidden; }

@@ -50,7 +50,7 @@ export const Login = () => {
                 autoFocus
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username (e.g., admin or cashier)"
+                placeholder="Enter your username or mobile number"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500 transition shadow-xs"
               />
             </div>
@@ -69,12 +69,6 @@ export const Login = () => {
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold outline-none focus:border-amber-500 transition shadow-xs"
               />
             </div>
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-0.5 font-medium">
-            <div className="font-extrabold text-amber-800 uppercase tracking-wider">Demo System Accounts:</div>
-            <div>Admin: <code className="text-slate-900 font-extrabold bg-slate-200 px-1 py-0.5 rounded">admin</code> / <code className="text-slate-900 font-extrabold bg-slate-200 px-1 py-0.5 rounded">admin123</code></div>
-            <div>Cashier: <code className="text-slate-900 font-extrabold bg-slate-200 px-1 py-0.5 rounded">cashier</code> / <code className="text-slate-900 font-extrabold bg-slate-200 px-1 py-0.5 rounded">cashier123</code></div>
           </div>
 
           <button

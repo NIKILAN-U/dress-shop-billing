@@ -2,13 +2,15 @@
   "name": "aura-textiles-pos",
   "version": "1.0.0",
   "description": "Aura Textiles — POS Billing & Inventory Software Desktop Application",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "build:frontend": "cd frontend && npm run build",
+    "build:backend": "npx esbuild backend/src/server.js --bundle --platform=node --target=node20 --outfile=backend/dist/server.cjs --format=cjs --external:electron --define:import.meta.url=__AURA_META_URL__ --banner:js=\"const __AURA_META_URL__=require('url').pathToFileURL(__filename).href;\"",
     "start": "node backend/src/server.js",
     "electron:dev": "electron .",
-    "dist": "npm run build:frontend && electron-builder --win nsis"
+    "dist": "npm run build:frontend && npm run build:backend && electron-builder --win portable",
+    "dist:installer": "npm run build:frontend && npm run build:backend && electron-builder --win nsis"
   },
   "build": {
     "appId": "com.auratextiles.pos",
@@ -18,18 +20,19 @@
     },
     "files": [
       "backend/**/*",
+      "!backend/.env",
+      "!backend/dist/**/*.map",
       "frontend/dist/**/*",
       "electron/**/*",
       "package.json"
     ],
+    "asar": true,
+    "asarUnpack": [
+      "backend/**/*",
+      "frontend/dist/**/*"
+    ],
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
         {
           "target": "portable",
           "arch": [

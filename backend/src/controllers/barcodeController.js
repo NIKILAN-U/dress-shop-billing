@@ -2,10 +2,13 @@ import { Product } from '../models/Product.js';
 import { BarcodePrintLog } from '../models/BarcodePrintLog.js';
 import { ShopSettings } from '../models/ShopSettings.js';
 
-// Helper to generate next unique barcode e.g. DSS000001
-const generateNextBarcode = async (prefix = 'DSS') => {
+// Helper to generate next unique barcode e.g. DSS000001. `reserved` lets a
+// caller ask for several in one batch (e.g. every variant on a new product)
+// without persisting in between each one — the DB scan alone can't tell two
+// not-yet-saved candidates apart.
+const generateNextBarcode = async (prefix = 'DSS', reserved = new Set()) => {
   const products = await Product.find({}, 'variants.barcode');
-  const existingBarcodes = new Set();
+  const existingBarcodes = new Set(reserved);
   products.forEach((p) => {
     p.variants.forEach((v) => {
       if (v.barcode) existingBarcodes.add(v.barcode.trim());
@@ -19,6 +22,30 @@ const generateNextBarcode = async (prefix = 'DSS') => {
     candidate = `${prefix}${String(counter).padStart(6, '0')}`;
   }
   return candidate;
+};
+
+// Next barcode(s) for the "Add Product" form — continues the same running
+// sequence used everywhere else (barcode management, bulk-generate) rather
+// than a separate random scheme, so a fresh product picks up right after
+// whatever the previous product's last variant barcode was.
+export const getNextBarcodes = async (req, res) => {
+  try {
+    const settings = await ShopSettings.findOne();
+    const prefix = settings?.barcodePrefix || 'DSS';
+    const count = Math.min(50, Math.max(1, parseInt(req.query.count, 10) || 1));
+
+    const reserved = new Set();
+    const barcodes = [];
+    for (let i = 0; i < count; i++) {
+      const bc = await generateNextBarcode(prefix, reserved);
+      reserved.add(bc);
+      barcodes.push(bc);
+    }
+
+    res.json({ success: true, barcodes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // 1. Get Barcode Catalog & Statistics
@@ -163,12 +190,15 @@ export const bulkGenerateBarcodes = async (req, res) => {
 
     const products = await Product.find({ status: 'active' });
     let generatedCount = 0;
+    const reserved = new Set();
 
     for (const product of products) {
       let modified = false;
       for (const variant of product.variants) {
         if (!variant.barcode || !variant.barcode.trim()) {
-          variant.barcode = await generateNextBarcode(prefix);
+          const bc = await generateNextBarcode(prefix, reserved);
+          reserved.add(bc);
+          variant.barcode = bc;
           generatedCount++;
           modified = true;
         }

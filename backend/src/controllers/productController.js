@@ -1,6 +1,7 @@
 import { Product } from '../models/Product.js';
 import { StockTransaction } from '../models/StockTransaction.js';
 import { logAudit } from '../middleware/auditLogger.js';
+import { DEFAULT_COMMISSION_TYPE, DEFAULT_COMMISSION_VALUE } from '../utils/commission.js';
 
 export const getProducts = async (req, res) => {
   try {
@@ -80,8 +81,8 @@ export const getProductByBarcode = async (req, res) => {
         mrp: product.mrp,
         taxPercent: product.taxPercent,
         discountPercent: product.discountPercent,
-        commissionType: product.commissionType || 'Percentage',
-        commissionValue: product.commissionValue || 0,
+        commissionType: product.commissionType || DEFAULT_COMMISSION_TYPE,
+        commissionValue: product.commissionValue ?? DEFAULT_COMMISSION_VALUE,
         selectedVariant: {
           variantId: variant._id,
           size: variant.size,
@@ -136,13 +137,17 @@ export const createProduct = async (req, res) => {
       variants
     } = req.body;
 
-    if (!name || !sku || !category || !purchasePrice || !sellingPrice) {
-      return res.status(400).json({ success: false, message: 'Required product fields missing' });
+    const trimmedSku = sku?.trim();
+
+    if (!name || !category || sellingPrice === undefined || sellingPrice === null || sellingPrice === '') {
+      return res.status(400).json({ success: false, message: 'Product name, category, and selling price are required' });
     }
 
-    const existingSku = await Product.findOne({ sku: sku.trim() });
-    if (existingSku) {
-      return res.status(400).json({ success: false, message: 'Product SKU already exists' });
+    if (trimmedSku) {
+      const existingSku = await Product.findOne({ sku: trimmedSku });
+      if (existingSku) {
+        return res.status(400).json({ success: false, message: 'Product SKU already exists' });
+      }
     }
 
     // Check duplicate barcodes in input variants & DB
@@ -161,21 +166,24 @@ export const createProduct = async (req, res) => {
 
     const product = await Product.create({
       name: name.trim(),
-      sku: sku.trim(),
+      // Omitted entirely (not an empty string) when not provided, so the
+      // sparse unique index treats it as absent rather than colliding with
+      // every other product that also has no SKU.
+      ...(trimmedSku ? { sku: trimmedSku } : {}),
       category,
       subcategory,
       brand: brand || null,
       gender: gender || 'Unisex',
       description,
-      purchasePrice,
+      purchasePrice: purchasePrice || 0,
       sellingPrice,
       mrp: mrp || sellingPrice,
       taxPercent: taxPercent || 0,
       discountPercent: discountPercent || 0,
       minStockLevel: minStockLevel || 5,
       supplier: supplier || null,
-      commissionType: commissionType || 'Percentage',
-      commissionValue: commissionValue || 0,
+      commissionType: commissionType || DEFAULT_COMMISSION_TYPE,
+      commissionValue: commissionValue ?? DEFAULT_COMMISSION_VALUE,
       variants: variants || []
     });
 

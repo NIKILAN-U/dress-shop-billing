@@ -548,7 +548,7 @@ export const StaffCommission = () => {
                         {formatCurrency(item.totalAmount, currencySymbol)}
                       </td>
                       <td className="py-3 px-4 text-center font-bold text-slate-700">
-                        {item.commissionType === 'Percentage' ? `${item.commissionValue}%` : `₹${item.commissionValue} / pc`}
+                        {item.commissionType === 'Percentage' ? `${item.commissionValue}%` : `₹3 / ₹1000`}
                       </td>
                       <td className="py-3 px-4 text-right font-black text-emerald-600">
                         {formatCurrency(item.commissionAmount, currencySymbol)}

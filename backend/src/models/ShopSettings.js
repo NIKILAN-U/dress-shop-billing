@@ -15,6 +15,17 @@ const shopSettingsSchema = new mongoose.Schema(
     enableGst: { type: Boolean, default: true },
     defaultGstRate: { type: Number, default: 5 },
     receiptWidth: { type: String, enum: ['58mm', '80mm', 'A4'], default: '80mm' },
+    // Windows printer names (from the OS printer list) so receipts and
+    // barcode labels each go to their own physical device instead of both
+    // competing for whatever the OS default printer happens to be. Empty
+    // string falls back to the OS default.
+    receiptPrinterName: { type: String, default: '' },
+    labelPrinterName: { type: String, default: '' },
+    // Where "Backup Database Now" writes its snapshot files, and where the
+    // backup list is read from. Empty means the app-managed default location
+    // (inside userData); a real path lets the shop point backups at, say, an
+    // external drive.
+    backupFolderPath: { type: String, default: '' },
     lowStockThreshold: { type: Number, default: 5 },
     maxCashierDiscountPercent: { type: Number, default: 10 },
     keyboardShortcutsEnabled: { type: Boolean, default: true },
